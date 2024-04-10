@@ -1,19 +1,33 @@
+from typing import List
 from cogent3 import SequenceCollection, Sequence
+import functools
+
 class DeBrujinGraph:
     def __init__(self, kmer_length):
         self.kmer_length = kmer_length
         self.graph = {}
         self.start_nodes = {}  # Track the start node of each sequence
+        self.sequence_count = 0
 
-    def add_sequences(self, sequences : SequenceCollection):
-        for seq_index, seq in enumerate(sequences.seqs):
-            # Ensure each sequence has a unique start identifier
+    @functools.singledispatchmethod
+    def add_sequence(self, sequences):
+        raise TypeError("Unsupported type. Expected string or Sequence.")
+
+    @add_sequence.register
+    def _(self, sequence: Sequence):
+        self.add_sequence(str(sequence))
+
+    @add_sequence.register
+    def _(self, sequence: str):
+        # Ensure each sequence has a unique start identifier
+        try:
+            seq_index = self.sequence_count
             start_node = f"start_{seq_index}"
             self.start_nodes[seq_index] = start_node
             previous_node = start_node
 
-            for i in range(len(seq) - self.kmer_length + 1):
-                kmer = seq[i:i+self.kmer_length]
+            for i in range(len(sequence) - self.kmer_length + 1):
+                kmer = sequence[i:i+self.kmer_length]
                 prefix = kmer[:-1]
                 suffix = kmer[1:]
 
@@ -28,6 +42,21 @@ class DeBrujinGraph:
                 # Ensure every suffix is represented in the graph, even if it has no outgoing edges
                 if suffix not in self.graph:
                     self.graph[suffix] = {}
+        finally:
+            self.sequence_count += 1
+
+    @functools.singledispatchmethod
+    def add_sequences(self, sequences):
+        raise TypeError("Unsupported type. Expected List[str] or SequenceCollection.")
+
+    @add_sequences.register
+    def _(self, sequences: SequenceCollection):
+        for sequence in sequences.seqs:
+            self.add_sequence(sequence)
+
+    def add_sequences(self, sequences: List[str]):
+        for seq in sequences.seqs:
+            self.add_sequence(seq)
 
     def __getitem__(self, seq_index):
         if seq_index not in self.start_nodes:
