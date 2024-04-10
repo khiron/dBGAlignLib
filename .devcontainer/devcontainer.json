@@ -1,0 +1,21 @@
+{
+    "name": "Python Project",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "..",
+        "args": { "VARIANT": "3.8" }
+    },
+    "runArgs": [ "-u", "vscode", "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
+    "settings": { 
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "python.pythonPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+        "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+        "python.formatting.provider": "black",
+        "python.sortImports.path": "/usr/local/py-utils/bin/isort",
+        "python.testing.pytestPath": "/usr/local/py-utils/bin/pytest",
+    },
+    "extensions": ["ms-python.python"]
+}
