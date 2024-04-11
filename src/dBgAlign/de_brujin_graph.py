@@ -190,14 +190,13 @@ class DeBrujinGraph_Node:
         return None  # return None if no matching node was found
 
     def get_sequence(self, sequence_index: int, start_passage_index: int = 1, length: int = None) -> str:
-        sequence = ''
-        current_node = self
-        current_passage_index = start_passage_index
         char_count = 0  # Track the number of characters added to the sequence
 
         current_node = self.find(sequence_index, start_passage_index)
         if not current_node:
             raise ValueError("No starting node found for the specified sequence and passage index")
+        current_passage_index = start_passage_index + 1
+        sequence = current_node.kmer
 
         while current_node:
             # Retrieve the edge that corresponds to the current sequence and passage index
@@ -212,13 +211,8 @@ class DeBrujinGraph_Node:
             
             next_edge = edges[0]
             
-            # Decide whether to add the entire kmer or just the last character
-            if not sequence:
-                # If sequence is empty, start with the full kmer
-                sequence += next_edge.target_node.kmer
-            else:
-                # Otherwise, just add the last character of the kmer
-                sequence += next_edge.target_node.kmer[-1]
+            # add the last character of the kmer
+            sequence += next_edge.target_node.kmer[-1]
             
             # Update the character count and check if we've reached the desired length
             char_count += len(sequence[-len(next_edge.target_node.kmer):])
