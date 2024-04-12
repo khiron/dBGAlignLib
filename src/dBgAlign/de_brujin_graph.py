@@ -41,7 +41,6 @@ class DeBrujinGraph:
         current_node = self.root
         passage_index = 0
         for kmer in self.generate_kmers(sequence, self.kmer_length):
-            passage_index += 1
             next_node = self.graph.get(kmer)
             if next_node is None:
                 next_node = DeBrujinGraph_Node(self, kmer)
@@ -50,6 +49,7 @@ class DeBrujinGraph:
                                   sequence_index=sequence_index,
                                   passage_index=passage_index)
             current_node = next_node
+            passage_index += 1
 
     @add_sequence.register(cogent3.Sequence)
     def _(self, sequence: cogent3.Sequence, name=None):
@@ -130,6 +130,21 @@ class DeBrujinGraph:
 
     def __repr__(self):
         return f"dbg k:{self.kmer_length}, mol:{self.moltype}, seq's:{len(self)})"
+    
+    def to_mermaid(self):
+        """Generates a Mermaid graph description of the de Bruijn graph."""
+        mermaid_str = "graph LR;\n"
+        
+        # Iterate through all nodes in the graph; only include those with a defined k-mer
+        for kmer, node in self.graph.items():
+            if node.kmer:  # Only include nodes that have a k-mer defined
+                for edge in node.edges:
+                    target_kmer = edge.target_node.kmer
+                    if target_kmer:  # Ensure the target node also has a k-mer
+                        label = f"\"{edge.passage_count}\""
+                        mermaid_str += f"{kmer} -->|{label}| {target_kmer};\n"
+        
+        return mermaid_str
     
 
 class DeBrujinGraph_Node:
