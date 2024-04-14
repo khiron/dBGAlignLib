@@ -30,7 +30,7 @@ class DeBrujinGraph:
             if node not in visited:
                 run_nodes = node.run()
                 if len(run_nodes) > 1:
-                    node.compress()  # Compress the entire run starting from 'node'
+                    node.compress(run_nodes)  # Compress the entire run starting from 'node'
                     visited.update(run_nodes)  # Mark all nodes in the run as visited
         self.graph = {} 
         self.is_compressed = True
@@ -190,6 +190,24 @@ class DeBrujinGraph_Node:
     def children(self):
         return {edge.target_node for edge in self.edges}
 
+    @property
+    def has_single_parent(self) -> bool:
+        return len(self.parent_nodes) == 1
+    
+    @property
+    def has_one_child(self) -> bool:
+        return len(self.edges) == 1
+    
+    @property
+    def first_child(self) -> "DeBrujinGraph_Node":
+        return self.edges[0].target_node
+    
+    @property
+    def sole_child(self) -> "DeBrujinGraph_Node":
+        if not self.has_one_child:
+            raise ValueError("Node does not have a single child")
+        return self.edges[0].target_node
+
     def add_edge(self, target_node, sequence_index=None, passage_index=None):
         """Create a new edge to target_node if not already existing, or return existing one."""
         for edge in self.edges:
@@ -203,28 +221,32 @@ class DeBrujinGraph_Node:
         return new_edge
  
     def run(self):
-        """Returns a list of nodes starting from this node, which form a continuous run with single outgoing and incoming edges."""
-        current_node = self
-        run_nodes = [current_node]
-        while len(current_node.edges) == 1:
-            next_node = current_node.edges[0].target_node
-            if len(next_node.edges) != 1:
-                break
-            run_nodes.append(next_node)
-            current_node = next_node
+        """Generates a list of nodes that form a linear run from this node."""
+        run_nodes = [self]
+        candidate = self
+        while candidate.has_one_child \
+                and candidate.sole_child.has_single_parent:
+            child = candidate.first_child
+            run_nodes.append(child)
+            candidate = child
         return run_nodes
-    
-    def compress(self):
-        """Compress this node by extending its kmer with the kmer of the next node in the run until a divergence point."""
-        run_nodes = self.run()
+        
+    def compress(self, run_nodes = None):
+        if not run_nodes:
+            run_nodes = self.run()
         if len(run_nodes) > 1:
+            # Extend the base node's kmer and adopt the last node's edges
+            last_node = self
             for node in run_nodes[1:]:
-                self.kmer += node.kmer[1:]  # Assuming k-1 overlap
-                self.edges = node.edges  # Assume the last node's edges
-                for child in node.children:
-                    child.parent_nodes.discard(node)  # Safe removal
-                    child.parent_nodes.add(self)
-                
+                self.kmer += node.kmer[-1]  # Assuming k-1 overlap
+                last_node = node
+            for child in last_node.children:
+                if not last_node in child.parent_nodes:
+                    pass
+                child.parent_nodes.remove(last_node)
+                child.parent_nodes.add(self)
+            self.edges = last_node.edges
+
     def has_cycle(self, visited=None, ancestors=None):
         if visited is None:
             visited = set()

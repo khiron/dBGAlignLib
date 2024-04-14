@@ -31,7 +31,7 @@ def test_has_bubbles(output_dir):
     dbg.add_sequence(["ACGTCATGCA", "ACGTCATCATGCA"])
     assert dbg.has_bubbles()
     # write out the mermaid file
-    with open(output_dir / "test_has_bubbles.mmd", "w") as f:
+    with open(output_dir / "test_has_bubbles.md", "w") as f:
         f.write(dbg.to_mermaid())
 
 def test_create_dbg_from_list():
@@ -74,13 +74,21 @@ def test_sequence_reconstruction():
     # Test with specific start and length
     assert dbg.root.get_sequence(1, start_passage_index=2, length=4) == "CGTG"
 
-def test_compress():
+def test_compress(output_dir):
     dbg = dBgAlign.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
         "seq2": "ACAGTACTGGCAT", 
         "seq3":"ACAGCGCAT"
         })
+    with open(output_dir / "nested_bubble.md", "w") as f:
+        f.write("```mermaid\n")
+        f.write(dbg.to_mermaid())
+        f.write("```")    
     dbg.compress_graph()
-    dbg.root[1].kmer == "ACAG"
-    dbg.root[1][0].kmer == "AGTAC"
+    # write mermaid out to testout folder
+    with open(output_dir / "nested_bubble_compressed.md", "w") as f:
+        f.write("```mermaid\n")
+        f.write(dbg.to_mermaid())
+        f.write("```")
+    
