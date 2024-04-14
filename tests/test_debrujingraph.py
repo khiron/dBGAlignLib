@@ -12,6 +12,10 @@ def test_create_dbg_from_string():
     dbg.add_sequence("ACGT")
     assert len(dbg) == 1
     assert dbg.names() == ["Sequence_1"]
+    assert dbg.root.__repr__() == "Node:(None) [ACG]"
+    assert dbg.root[0].__repr__() == "Node:(ACG) [CGT]"
+    assert dbg.root[0][0].kmer == "CGT"
+
 
 def test_has_cycles():
     dbg = dBgAlign.DeBrujinGraph(3)
@@ -35,6 +39,12 @@ def test_create_dbg_from_list():
     dbg.add_sequence(["ACGT", "CGTA"])
     assert len(dbg) == 2
     assert dbg.names() == ["Sequence_1", "Sequence_2"]
+    assert dbg.root.__repr__() == "Node:(None) [ACG,CGT]"
+    assert len(dbg.root) == 2
+    assert dbg.root[0].kmer == "ACG"
+    assert dbg.root[0][0].kmer == "CGT"
+    assert dbg.root[1].kmer == "CGT"
+    assert dbg.root[1][0].kmer == "GTA"
 
 def test_create_dbg_from_dict():
     dbg = dBgAlign.DeBrujinGraph(3,cogent3.DNA)
@@ -63,3 +73,14 @@ def test_sequence_reconstruction():
     assert dbg["seq2"] == "TACGTGA"
     # Test with specific start and length
     assert dbg.root.get_sequence(1, start_passage_index=2, length=4) == "CGTG"
+
+def test_compress():
+    dbg = dBgAlign.DeBrujinGraph(3,cogent3.DNA)
+    dbg.add_sequence({
+        "seq1": "ACAGTACGGCAT", 
+        "seq2": "ACAGTACTGGCAT", 
+        "seq3":"ACAGCGCAT"
+        })
+    dbg.compress_graph()
+    dbg.root[1].kmer == "ACAG"
+    dbg.root[1][0].kmer == "AGTAC"
