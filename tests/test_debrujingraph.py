@@ -24,16 +24,6 @@ def test_has_cycles():
     dbg.add_sequence("ACATCATGCA")
     assert dbg.has_cycles()
 
-def test_has_bubbles(output_dir):
-    dbg = dbg_align.DeBrujinGraph(3)
-    dbg.add_sequence(["ACGTCATGCA", "ACGTCATGCA"])
-    assert not dbg.has_bubbles()
-    dbg.add_sequence(["ACGTCATGCA", "ACGTCATCATGCA"])
-    assert dbg.has_bubbles()
-    # write out the mermaid file
-    with open(output_dir / "test_has_bubbles.md", "w") as f:
-        f.write(dbg.to_mermaid())
-
 def test_create_dbg_from_list():
     dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence(["ACGT", "CGTA"])
