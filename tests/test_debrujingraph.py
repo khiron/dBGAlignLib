@@ -1,14 +1,14 @@
 import cogent3
-import dBgAlign
+import dbg_align
 
 def test_create_empty_dbg():
-    dbg = dBgAlign.DeBrujinGraph(3)
+    dbg = dbg_align.DeBrujinGraph(3)
     assert len(dbg) == 0
     assert dbg.names() == []
     assert dbg.moltype == cogent3.DNA
 
 def test_create_dbg_from_string():
-    dbg = dBgAlign.DeBrujinGraph(3,cogent3.DNA)
+    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence("ACGT")
     assert len(dbg) == 1
     assert dbg.names() == ["Sequence_1"]
@@ -18,14 +18,14 @@ def test_create_dbg_from_string():
 
 
 def test_has_cycles():
-    dbg = dBgAlign.DeBrujinGraph(3)
+    dbg = dbg_align.DeBrujinGraph(3)
     dbg.add_sequence("ACGTCATGCA")
     assert not dbg.has_cycles()
     dbg.add_sequence("ACATCATGCA")
     assert dbg.has_cycles()
 
 def test_has_bubbles(output_dir):
-    dbg = dBgAlign.DeBrujinGraph(3)
+    dbg = dbg_align.DeBrujinGraph(3)
     dbg.add_sequence(["ACGTCATGCA", "ACGTCATGCA"])
     assert not dbg.has_bubbles()
     dbg.add_sequence(["ACGTCATGCA", "ACGTCATCATGCA"])
@@ -35,7 +35,7 @@ def test_has_bubbles(output_dir):
         f.write(dbg.to_mermaid())
 
 def test_create_dbg_from_list():
-    dbg = dBgAlign.DeBrujinGraph(3,cogent3.DNA)
+    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence(["ACGT", "CGTA"])
     assert len(dbg) == 2
     assert dbg.names() == ["Sequence_1", "Sequence_2"]
@@ -47,7 +47,7 @@ def test_create_dbg_from_list():
     assert dbg.root[1][0].kmer == "GTA"
 
 def test_create_dbg_from_dict():
-    dbg = dBgAlign.DeBrujinGraph(3,cogent3.DNA)
+    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
         "seq2": "ACAGTACTGGCAT", 
@@ -63,7 +63,7 @@ def test_create_dbg_from_dict():
     assert dbg['seq3'] == "ACAGCGCAT"
 
 def test_sequence_reconstruction():
-    dbg = dBgAlign.DeBrujinGraph(3, cogent3.DNA)
+    dbg = dbg_align.DeBrujinGraph(3, cogent3.DNA)
     sequences = {
         "seq1": "ACGTGAC",
         "seq2": "TACGTGA",
@@ -75,7 +75,7 @@ def test_sequence_reconstruction():
     assert dbg.root.get_sequence(1, start_passage_index=2, length=4) == "CGTG"
 
 def test_compress(output_dir):
-    dbg = dBgAlign.DeBrujinGraph(3,cogent3.DNA)
+    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
         "seq2": "ACAGTACTGGCAT", 

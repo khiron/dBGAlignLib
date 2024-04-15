@@ -3,7 +3,7 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
-module = "dBgAlign"
+module = "dbg_align"
 author = "Richard Morris"
 author-email = "richard@khiron.com"
 home-page = "https://github.com/khiron/dBgAlign"

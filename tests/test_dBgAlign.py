@@ -1,8 +1,8 @@
 import cogent3
-import dBgAlign
+import dbg_align
 
 
 def test_version():
-    assert dBgAlign.__version__ == "0.1.0"
-    assert dBgAlign.__author__ == "Richard Morris"
+    assert dbg_align.__version__ == "0.1.0"
+    assert dbg_align.__author__ == "Richard Morris"
 
