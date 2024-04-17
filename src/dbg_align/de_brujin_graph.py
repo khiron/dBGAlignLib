@@ -18,7 +18,7 @@ class DeBrujinGraph:
     """
     def __init__(self, kmer_length: int, moltype: MolType = cogent3.DNA):
         self.kmer_length = kmer_length
-        self.root = DeBrujinGraph_Node(self, None)  # Root node of the graph
+        self.root = DeBrujinGraphNode(self, None)  # Root node of the graph
         self.graph = {}
         self.moltype = moltype
         self.sequence_names = []  # Index table to store names of sequences
@@ -74,7 +74,7 @@ class DeBrujinGraph:
         for kmer in self.generate_kmers(sequence, self.kmer_length):
             next_node = self.graph.get(kmer)
             if next_node is None:
-                next_node = DeBrujinGraph_Node(self, kmer)
+                next_node = DeBrujinGraphNode(self, kmer)
                 self.graph[kmer] = next_node
             current_node.add_edge(target_node= next_node, 
                                   sequence_index=sequence_index,
@@ -194,7 +194,7 @@ class DeBrujinGraph:
 
         return mermaid_str
     
-class DeBrujinGraph_Node:
+class DeBrujinGraphNode:
     def __init__(self, de_brujin_graph : DeBrujinGraph, kmer: str) -> None:
         self.kmer = kmer
         self.edges = []  # List of DeBrujinGraph_Edge objects
@@ -217,11 +217,11 @@ class DeBrujinGraph_Node:
         return len(self.edges) == 1
     
     @property
-    def first_child(self) -> "DeBrujinGraph_Node":
+    def first_child(self) -> "DeBrujinGraphNode":
         return self.edges[0].target_node
     
     @property
-    def sole_child(self) -> "DeBrujinGraph_Node":
+    def sole_child(self) -> "DeBrujinGraphNode":
         if not self.has_one_child:
             raise ValueError("Node does not have a single child")
         return self.edges[0].target_node
@@ -232,7 +232,7 @@ class DeBrujinGraph_Node:
             if edge.target_node == target_node:
                 edge.add_traversal(sequence_index, passage_index)
                 return edge
-        new_edge = DeBrujinGraph_Edge(target_node)
+        new_edge = DeBrujinGraphEdge(target_node)
         new_edge.add_traversal(sequence_index, passage_index)
         self.edges.append(new_edge)
         target_node.parent_nodes.add(self) # Add this node as a parent to the target node
@@ -284,7 +284,7 @@ class DeBrujinGraph_Node:
         ancestors.remove(self)
         return False
    
-    def sequence_edges(self, sequence_index: int) -> List["DeBrujinGraph_Edge"]:
+    def sequence_edges(self, sequence_index: int) -> List["DeBrujinGraphEdge"]:
         """Retrieve all edges that correspond to a specific sequence index."""
         if sequence_index is None:
             return self.edges
@@ -293,7 +293,7 @@ class DeBrujinGraph_Node:
                                  for traversal in edge.traversals)]
         return filtered_edges
 
-    def sequence_passage_edges(self, sequence_index: int, passage_index: int) -> List["DeBrujinGraph_Edge"]:
+    def sequence_passage_edges(self, sequence_index: int, passage_index: int) -> List["DeBrujinGraphEdge"]:
         """Retrieve all edges that correspond to a specific sequence and passage index."""
         filtered_edges = [edge for edge in self.edges 
                         if any(traversal.sequence_index == sequence_index 
@@ -361,7 +361,7 @@ class DeBrujinGraph_Node:
     def __repr__(self):
         return f"Node:({self.kmer}) [{','.join([edge.target_node.kmer for edge in self.edges])}]"
 
-class DeBrujinGraph_Traversal:
+class DeBrujinGraphTraversal:
     def __init__(self, sequence_index: int, passage_index: int) -> None:
         self.sequence_index = sequence_index
         self.passage_index = passage_index
@@ -369,13 +369,13 @@ class DeBrujinGraph_Traversal:
     def __repr__(self):
         return f"({self.sequence_index}:{self.passage_index})"
 
-class DeBrujinGraph_Edge:
-    def __init__(self, target_node: DeBrujinGraph_Node) -> None:
+class DeBrujinGraphEdge:
+    def __init__(self, target_node: DeBrujinGraphNode) -> None:
         self.target_node = target_node
-        self.traversals : List[DeBrujinGraph_Traversal] = []  
+        self.traversals : List[DeBrujinGraphTraversal] = []  
 
     def add_traversal(self, sequence_index:int, passage_index:int):
-        self.traversals.append(DeBrujinGraph_Traversal(sequence_index, passage_index))
+        self.traversals.append(DeBrujinGraphTraversal(sequence_index, passage_index))
         return self
 
     def __repr__(self):
