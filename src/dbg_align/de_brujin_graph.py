@@ -4,6 +4,12 @@ from typing import List, Union
 import cogent3
 from cogent3.core.moltype import MolType
 
+from enum import Enum
+
+class AlignmentMethod(Enum):
+    RAW = "RAW"
+    DBG1D = "DBG1D"
+    DBG2D = "DBG2D"
 
 class DeBrujinGraph:
     """ A class to represent a de Bruijn graph for a set of sequences.
@@ -35,6 +41,18 @@ class DeBrujinGraph:
         self.graph = {} 
         self.is_compressed = True
 
+    def order_complexity(self, alignment_type: AlignmentMethod):
+        """Returns the order complexity of aligninging the sequences."""
+        if alignment_type == AlignmentMethod.RAW:
+            product = 1
+            for sequence in self:
+                product *= len(sequence)
+            return product
+        elif alignment_type == AlignmentMethod.DBG1D or alignment_type == AlignmentMethod.DBG2D:
+            return 0  #TODO: Implement the order complexity calculation for DBG1D and DBG2D
+        else:
+            raise ValueError("Unsupported alignment type")
+        
     @singledispatchmethod
     def add_sequence(self, sequence, name=None):
         # Placeholder for unrecognized types
