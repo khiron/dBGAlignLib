@@ -25,6 +25,8 @@ class DBGNode:
     
     @property
     def first_child(self) -> "DBGNode":
+        if not self.edges:
+            raise ValueError("Node does not have any children")
         return self.edges[0].target_node
     
     @property
@@ -32,6 +34,27 @@ class DBGNode:
         if not self.has_one_child:
             raise ValueError("Node does not have a single child")
         return self.edges[0].target_node
+    
+    @property
+    def first_sequence_index(self) -> int:
+        return self.first_child.traversals[0].sequence_index
+
+    @property
+    def starts_split(self) -> bool: 
+        return len(self.edges) > 1
+    
+    def find_merge_node(self) -> "DBGNode":
+        if not self.starts_split:
+            raise ValueError(f"Node {self.kmer} does not start a split")
+        # find the first node that has all the same sequences entering it as this node has exiting it
+        current_node = self
+        sequence_to_follow = self.first_sequence_index
+        while current_node:
+            if not all(edge.target_node.find(sequence_to_follow, 1) == current_node for edge in current_node.edges):
+                break
+            current_node = current_node.first_child
+        return current_node
+
 
     def add_edge(self, target_node, sequence_index=None, passage_index=None):
         """Create a new edge to target_node if not already existing, or return existing one."""
@@ -126,6 +149,10 @@ class DBGNode:
                 if found_node:
                     return found_node  # return only if a node was found
         return None  # return None if no matching node was found
+
+    def next_in_sequence(self, sequence_index: int, passage_index: int) -> "DBGNode":
+        
+        pass
 
     def get_sequence(self, sequence_index: int, start_passage_index: int = 1, length: int = None) -> str:
         current_node = self.find(sequence_index, start_passage_index)

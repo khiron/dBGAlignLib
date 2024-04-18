@@ -49,8 +49,18 @@ class DeBrujinGraph:
             for sequence in self:
                 product *= len(sequence)
             return product
-        elif alignment_type == AlignmentMethod.DBG1D or alignment_type == AlignmentMethod.DBG2D:
-            return 0  #TODO: Implement the order complexity calculation for DBG1D and DBG2D
+        elif alignment_type == AlignmentMethod.DBG1D:
+            if not self.is_compressed:
+                raise ValueError("Graph must be compressed before calculating de Brujin graph order complexity")
+                # for each level 1 bubble 
+                # sum the product of lengths of each sequence in the bubble
+            return 0 #TODO: Implement the order complexity calculation for DBG1D
+        elif alignment_type == AlignmentMethod.DBG2D:
+            if not self.is_compressed:
+                raise ValueError("Graph must be compressed before calculating de Brujin graph order complexity")
+            # for each bubble
+            # sum the product of lengths of each sequence in the bubble
+            return 0  #TODO: Implement the order complexity calculation for DBG2D
         else:
             raise ValueError("Unsupported alignment type")
         
