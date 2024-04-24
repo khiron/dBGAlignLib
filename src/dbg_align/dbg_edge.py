@@ -17,3 +17,13 @@ class DBGEdge:
     
     def label(self):
         return f"{[(t.sequence_index, t.passage_index) for t in self.traversals]}"
+    
+    def traversals_for_sequence(self, sequence_index:int):
+        return [traversal for traversal in self.traversals if traversal.sequence_index == sequence_index]
+    
+    def next_node(self, sequence_index:int, passage_index:int):
+        traversals = self.traversals_for_sequence(sequence_index)
+        for traversal in traversals:
+            if traversal.passage_index == passage_index:
+                return self.target_node
+        return None

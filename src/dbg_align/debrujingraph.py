@@ -22,7 +22,7 @@ class DeBrujinGraph:
         self.root = DBGNode(None)  # Root node of the graph
         self.graph = {}
         self.moltype = moltype
-        self.sequence_names = []  # Index table to store names of sequences
+        self.sequence_names = {}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
         self.is_compressed = False
 
     @classmethod
@@ -46,8 +46,8 @@ class DeBrujinGraph:
         """Returns the order complexity of aligninging the sequences."""
         if alignment_type == AlignmentMethod.RAW:
             product = 1
-            for sequence in self:
-                product *= len(sequence)
+            for _, (_, length) in self.sequence_names.items():
+                product *= length
             return product
         elif alignment_type == AlignmentMethod.DBG1D:
             if not self.is_compressed:
@@ -75,10 +75,10 @@ class DeBrujinGraph:
         self.moltype.verify_sequence(sequence)
         if len(sequence) < self.kmer_length:
             raise ValueError("Sequence is shorter than kmer length")
-        sequence_index = len(self.sequence_names)+1
+        sequence_index = len(self)+1
         if not name:
             name = f"Sequence_{sequence_index}"
-        self.sequence_names.append(name)  
+        self.sequence_names[name] = (sequence_index, len(sequence))
         # Convert the sequence into kmers and add them to the graph
         current_node = self.root
         passage_index = 0
@@ -99,9 +99,8 @@ class DeBrujinGraph:
             raise ValueError("Sequence moltype does not match dBg moltype")
         name = name or sequence.name
         if not name:
-            name = f"Sequence_{len(self.sequence_names)+1}"
-            self.sequence_names.append(name)  # Store the name in the index table
-        # Logic to add sequence goes here
+            name = f"Sequence_{len(self)+1}"
+        self.add_sequence(str(sequence), name)    
 
     @add_sequence.register(cogent3.SequenceCollection)
     def _(self, sequences: cogent3.SequenceCollection):
@@ -124,7 +123,7 @@ class DeBrujinGraph:
 
     def names(self):
         """Returns an iterable collection of sequence names."""
-        return self.sequence_names
+        return list(self.sequence_names.keys())
 
     def has_cycles(self):
         """Returns True if the graph contains cycles."""
@@ -140,11 +139,18 @@ class DeBrujinGraph:
                 return True
         return False
     
+    def sequence_length(self, sequence_index: int) -> int:
+        """Returns the length of a sequence in the graph."""
+        for _, (index, length) in self.sequence_names.items():
+            if index == sequence_index:
+                return length
+        raise KeyError(f"Sequence index '{sequence_index}' not found")
+    
     def __len__(self):
-        return len(self.sequence_names)
+        return len(self.sequence_names.keys())
 
     def __iter__(self):
-        for index in range(1, len(self.sequence_names) + 1):
+        for index in range(1, len(self) + 1):
             yield self[index]
     
     @singledispatchmethod
@@ -153,17 +159,31 @@ class DeBrujinGraph:
 
     @__getitem__.register
     def _(self, index: int):
-        if index < 1 or index > len(self.sequence_names):
+        if index < 1 or index > len(self):
             raise IndexError("Sequence index out of range")
         # Start the sequence reconstruction from the root node
         sequence = self.root.get_sequence(index)
         return sequence
 
+    def index_for_name(self, name: str)->int:
+        """Returns the index for a sequence name."""
+        seq = self.sequence_names[name]
+        if not seq:
+            raise KeyError(f"Sequence name '{name}' not found")
+        return seq[0]
+    
+    def len_for_name(self, name: str)->int:
+        """Returns the length for a sequence name."""
+        seq = self.sequence_names[name]
+        if not seq:
+            raise KeyError(f"Sequence name '{name}' not found")
+        return seq[1]
+
     @__getitem__.register
     def _(self, name: str):
         if name not in self.sequence_names:
             raise KeyError(f"Sequence name '{name}' not found")
-        sequence_index = self.sequence_names.index(name) + 1
+        sequence_index = self.index_for_name(name)
         # Start the sequence reconstruction from the root node
         sequence = self.root.get_sequence(sequence_index)
         return sequence

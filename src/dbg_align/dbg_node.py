@@ -150,9 +150,26 @@ class DBGNode:
                     return found_node  # return only if a node was found
         return None  # return None if no matching node was found
 
-    def next_in_sequence(self, sequence_index: int, passage_index: int) -> "DBGNode":
-        
-        pass
+    def next_in_sequence(self, sequence_index: int, current_passage_index: int) -> "DBGNode":
+        """Return the next node in the sequence for the specified sequence index and passage index."""
+        for edge in self.sequence_edges(sequence_index):
+            for traversal in edge.traversals:
+                if traversal.passage_index == current_passage_index:
+                    return edge.target_node
+
+    def count_characters(self, sequence_index: int, current_passage_index: int = 0) -> int:
+        """
+        Count the number of characters remaining in the sequence from this node. 
+        starting with the smallest passage index above the current passage index.
+        """
+        current_node = self
+        character_count = len(current_node.kmer)
+        passage_index = current_passage_index
+        while current_node:
+            current_node = current_node.next_in_sequence(sequence_index, passage_index)
+            passage_index += 1
+        return character_count
+            
 
     def get_sequence(self, sequence_index: int, start_passage_index: int = 1, length: int = None) -> str:
         current_node = self.find(sequence_index, start_passage_index)

@@ -82,3 +82,14 @@ def test_compress(output_dir):
         f.write(dbg.to_mermaid())
         f.write("```")
     
+def test_counts():
+    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
+    dbg.add_sequence({
+        "seq1": "ACAGTACGGCAT", 
+        "seq2": "ACAGTACTGGCAT", 
+        "seq3":"ACAGCGCAT"
+        })
+    
+    assert dbg.sequence_length(1) == 12
+    assert dbg.sequence_length(2) == 13
+    assert dbg.sequence_length(3) == 9
