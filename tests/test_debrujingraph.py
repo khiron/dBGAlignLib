@@ -75,7 +75,7 @@ def test_compress(output_dir):
         f.write("```mermaid\n")
         f.write(dbg.to_mermaid())
         f.write("```")    
-    dbg.compress_graph()
+    dbg.to_POG()
     # write mermaid out to testout folder
     with open(output_dir / "nested_bubble_compressed.md", "w") as f:
         f.write("```mermaid\n")
