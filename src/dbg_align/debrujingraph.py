@@ -30,7 +30,7 @@ class DeBrujinGraph:
         for i in range(len(sequence) - k + 1):
             yield sequence[i:i + k]
 
-    def to_POG(self):
+    def to_pog(self):
         """Compresses the graph by extending nodes until the next branch point or the end of a run."""
         visited = set()
         for node in list(self.graph.values()):
