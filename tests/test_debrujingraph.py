@@ -52,24 +52,6 @@ def test_create_dbg_from_dict():
     assert dbg['seq2'] == "ACAGTACTGGCAT"
     assert dbg['seq3'] == "ACAGCGCAT"
 
-def test_compress(output_dir):
-    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
-    dbg.add_sequence({
-        "seq1": "ACAGTACGGCAT", 
-        "seq2": "ACAGTACTGGCAT", 
-        "seq3":"ACAGCGCAT"
-        })
-    with open(output_dir / "nested_bubble.md", "w") as f:
-        f.write("```mermaid\n")
-        f.write(dbg.to_mermaid())
-        f.write("```")    
-    dbg.to_pog()
-    # write mermaid out to testout folder
-    with open(output_dir / "nested_bubble_compressed.md", "w") as f:
-        f.write("```mermaid\n")
-        f.write(dbg.to_mermaid())
-        f.write("```")
-    
 def test_counts():
     dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence({
