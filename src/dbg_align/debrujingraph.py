@@ -19,7 +19,7 @@ class DeBrujinGraph:
     """
     def __init__(self, kmer_length: int, moltype: MolType = cogent3.DNA):
         self.kmer_length = kmer_length
-        self.root = DBGNode(None)  # Root node of the graph
+        self.root = DBGNode(kmer = None, kmer_length = kmer_length)  # Root node of the graph
         self.graph = {}
         self.moltype = moltype
         self.sequence_names = {}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
@@ -30,7 +30,7 @@ class DeBrujinGraph:
         for i in range(len(sequence) - k + 1):
             yield sequence[i:i + k]
 
-    def to_pog(self):
+    def to_pog(self)->"DeBrujinGraph":
         """Compresses the graph by extending nodes until the next branch point or the end of a run."""
         visited = set()
         for node in list(self.graph.values()):
@@ -41,6 +41,7 @@ class DeBrujinGraph:
                     visited.update(run_nodes)  # Mark all nodes in the run as visited
         self.graph = {} 
         self.is_compressed = True
+        return self
 
     def order_complexity(self, alignment_type: AlignmentMethod):
         """Returns the order complexity of aligninging the sequences."""
@@ -85,7 +86,7 @@ class DeBrujinGraph:
         for kmer in self.generate_kmers(sequence, self.kmer_length):
             next_node = self.graph.get(kmer)
             if next_node is None:
-                next_node = DBGNode(kmer)
+                next_node = DBGNode(kmer, self.kmer_length)
                 self.graph[kmer] = next_node
             current_node.add_edge(target_node= next_node, 
                                   sequence_index=sequence_index,

@@ -2,8 +2,9 @@ from typing import List
 
 
 class DBGNode:
-    def __init__(self, kmer: str) -> None:
+    def __init__(self, kmer: str, kmer_length: int) -> None:
         self.kmer = kmer
+        self.kmer_length = kmer_length
         self.edges = []  # List of DeBrujinGraph_Edge objects
         self.parent_nodes = set()  # set of nodes that lead to this node
         
@@ -151,11 +152,19 @@ class DBGNode:
         return None  # return None if no matching node was found
 
     def next_in_sequence(self, sequence_index: int, current_passage_index: int) -> "DBGNode":
-        """Return the next node in the sequence for the specified sequence index and passage index."""
-        for edge in self.sequence_edges(sequence_index):
+        """Return the next node in the sequence for the specified sequence index 
+           where the passage index is lowest but no lower than the current_passage_index."""
+        valid_traversals = []
+        for edge in self.edges:
             for traversal in edge.traversals:
-                if traversal.passage_index == current_passage_index:
-                    return edge.target_node
+                if traversal.sequence_index == sequence_index and traversal.passage_index >= current_passage_index:
+                    valid_traversals.append((traversal.passage_index, edge.target_node))
+
+        if valid_traversals:
+            passage_index, target_node = min(valid_traversals, key=lambda x: x[0])
+            return target_node, passage_index
+        else:
+            return None, current_passage_index
 
     def count_characters(self, sequence_index: int, current_passage_index: int = 0) -> int:
         """
@@ -166,50 +175,30 @@ class DBGNode:
         character_count = len(current_node.kmer)
         passage_index = current_passage_index
         while current_node:
-            current_node = current_node.next_in_sequence(sequence_index, passage_index)
-            passage_index += 1
+            current_node, passage_index = current_node.next_in_sequence(sequence_index, passage_index)
         return character_count
             
 
-    def get_sequence(self, sequence_index: int, start_passage_index: int = 1, length: int = None) -> str:
-        current_node = self.find(sequence_index, start_passage_index)
-        if not current_node:
-            raise ValueError("No starting node found for the specified sequence and passage index")
-        current_passage_index = start_passage_index 
-        sequence = current_node.kmer
+    def get_sequence(self, sequence_index: int) -> str:
+        current_node = self
+        current_passage_index = 0
+        sequence = ""
+        first_node = True
+        overlap_length = self.kmer_length - 1
 
         while current_node:
-            # Retrieve the edge that corresponds to the current sequence and passage index
-            edges = current_node.sequence_passage_edges(sequence_index, current_passage_index)
-            if not edges:
-                break  # No more edges match the criteria, stop the sequence construction
-
-            # Assuming there's exactly one edge for each passage index (handle errors or warnings otherwise)
-            if len(edges) > 1:
-                # This is a simple error handling case where multiple edges for the same passage index are unexpected
-                raise ValueError("Multiple edges found for the same passage index, expected only one.")
-            
-            next_edge = edges[0]
-            
-            # add the last character of the kmer
-            sequence += next_edge.target_node.kmer[-1]
-            
-            # Update the character count and check if we've reached the desired length
-            if length is not None and len(sequence) >= length:
-                sequence = sequence[:length]  # Trim the sequence to the specified length if necessary
-                break
-            
-            # Move to the next node and increment the passage index
-            current_node = next_edge.target_node
-            current_passage_index += 1
-
+            current_node, current_passage_index = current_node.next_in_sequence(sequence_index, current_passage_index)
+            if current_node:
+                if current_node.kmer: # nb: root node has no kmer
+                    if first_node: # start with the full kmer
+                        sequence += current_node.kmer
+                        first_node = False
+                    else:
+                        sequence += current_node.kmer[overlap_length:] # in subsequent appends skip the overlap (eg: first 2 characters in 3mers)
         return sequence
 
     def __getitem__(self, index):
         return self.edges[index].target_node
-    
-    def __len__(self):
-        return len(self.edges)
     
     def __repr__(self):
         return f"Node:({self.kmer}) [{','.join([edge.target_node.kmer for edge in self.edges])}]"

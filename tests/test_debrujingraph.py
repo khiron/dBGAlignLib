@@ -30,7 +30,7 @@ def test_create_dbg_from_list():
     assert len(dbg) == 2
     assert dbg.names() == ["Sequence_1", "Sequence_2"]
     assert dbg.root.__repr__() == "Node:(None) [ACG,CGT]"
-    assert len(dbg.root) == 2
+    assert len(dbg.root.edges) == 2
     assert dbg.root[0].kmer == "ACG"
     assert dbg.root[0][0].kmer == "CGT"
     assert dbg.root[1].kmer == "CGT"
@@ -51,18 +51,6 @@ def test_create_dbg_from_dict():
     assert dbg['seq1'] == "ACAGTACGGCAT"
     assert dbg['seq2'] == "ACAGTACTGGCAT"
     assert dbg['seq3'] == "ACAGCGCAT"
-
-def test_sequence_reconstruction():
-    dbg = dbg_align.DeBrujinGraph(3, cogent3.DNA)
-    sequences = {
-        "seq1": "ACGTGAC",
-        "seq2": "TACGTGA",
-    }
-    dbg.add_sequence(sequences)
-    assert dbg["seq1"] == "ACGTGAC"
-    assert dbg["seq2"] == "TACGTGA"
-    # Test with specific start and length
-    assert dbg.root.get_sequence(1, start_passage_index=2, length=4) == "CGTG"
 
 def test_compress(output_dir):
     dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
