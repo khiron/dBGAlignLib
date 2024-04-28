@@ -16,6 +16,7 @@ CTG -->|"1"| TGG;
 TGG -->|"1"| GGC;
 CAG -->|"1"| AGC;
 AGC -->|"1"| GCG;
-GCG -->|"1"| CGC;
+GCG -->|"2"| CGC;
+CGC -->|"1"| GCG;
 CGC -->|"1"| GCA;
 ```

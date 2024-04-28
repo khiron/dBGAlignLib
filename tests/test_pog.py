@@ -1,3 +1,4 @@
+from pathlib import Path
 import cogent3
 import dbg_align
 
@@ -15,7 +16,7 @@ def test_pog_reconstitutes_faithfully():
     assert pog["seq2"] == "ACAGTACTGGCAT"
     assert pog["seq3"] == "ACAGCGCAT"
 
-def test_compress_to_pog(output_dir):
+def test_compress_to_pog(output_dir: Path):
     dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
@@ -33,3 +34,20 @@ def test_compress_to_pog(output_dir):
         f.write(dbg.to_mermaid())
         f.write("```")
 
+def test_pog_cycle(output_dir: Path):
+    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
+    dbg.add_sequence({
+        "seq1": "ACAGTACGGCAT", 
+        "seq2": "ACAGTACTGGCAT", 
+        "seq3":"ACAGCGCGCAT"
+        })
+    with open(output_dir / "cycle.md", "w") as f:
+        f.write("```mermaid\n")
+        f.write(dbg.to_mermaid())
+        f.write("```")    
+    dbg.to_pog()
+    # write mermaid out to testout folder
+    with open(output_dir / "cycle_compressed.md", "w") as f:
+        f.write("```mermaid\n")
+        f.write(dbg.to_mermaid())
+        f.write("```")

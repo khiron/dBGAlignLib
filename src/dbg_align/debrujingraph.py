@@ -1,3 +1,4 @@
+from collections import deque
 from functools import singledispatchmethod
 from typing import List, Union
 
@@ -198,35 +199,22 @@ class DeBrujinGraph:
             return "graph LR;"
 
         mermaid_str = "graph LR;\n"
-        mermaid_str = self._mermaid_from_node(self.root, mermaid_str)
-        return mermaid_str
-
-    def _mermaid_from_node(self, root, mermaid_str):
-        stack = [(root, 0)]  # Stack to keep nodes and their edge index
+        queue = deque([self.root])
         visited = set()
-
-        while stack:
-            node, edge_index = stack[-1]  # Get the top item from the stack
+        
+        while queue:
+            node = queue.popleft()
             if node in visited:
-                stack.pop()
                 continue
-
-            if edge_index < len(node.edges):
-                edge = node.edges[edge_index]
+            visited.add(node)
+            for edge in node.edges:
                 target = edge.target_node
-                if node.kmer is None:
-                    mermaid_str += f"{'Root'} -->|\"{len(edge.traversals)}\"| {target.kmer};\n"
-                else:
-                    mermaid_str += f"{node.kmer} -->|\"{len(edge.traversals)}\"| {target.kmer};\n"
-                # Increment the current node's edge index for the next iteration
-                stack[-1] = (node, edge_index + 1)
-                # Push the target node onto the stack if it hasn't been visited
                 if target not in visited:
-                    stack.append((target, 0))
-            else:
-                # All edges for the current node have been processed
-                visited.add(node)
-                stack.pop()
-
+                    queue.append(target)
+                if node.kmer:
+                    mermaid_str += f"{node.kmer} --> {target.kmer};\n"
+                else:
+                    mermaid_str += f"{node.kmer} --> {target.kmer};\n"
+        
         return mermaid_str
-    
+

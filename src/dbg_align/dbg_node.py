@@ -63,6 +63,8 @@ class DBGNode:
 
         for edge in self.edges:
             if edge.target_node == target_node:
+                if sequence_index is not None and any(traversal.sequence_index == sequence_index for traversal in edge.traversals):
+                    continue
                 edge.add_traversal(sequence_index, passage_index)
                 return edge
         new_edge = DBGEdge(target_node)
