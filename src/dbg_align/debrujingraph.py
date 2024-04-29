@@ -66,7 +66,24 @@ class DeBrujinGraph:
             return 0  #TODO: Implement the order complexity calculation for DBG2D
         else:
             raise ValueError("Unsupported alignment type")
-        
+
+    def compression_ratio(self) -> int:
+        """Returns the mean kmer size of the POG over the original kmer length of the DBG that created the POG."""
+        if not self.is_compressed:
+            raise ValueError("Graph must be compressed before calculating compression ratio")
+        total_kmer_length = 0
+        node_count = 0
+
+        for node in self.root.traverse_all():
+            if node.kmer:
+                total_kmer_length += len(node.kmer)
+                node_count += 1
+
+        if node_count > 0:
+            return total_kmer_length / (node_count * self.kmer_length)
+        else:
+            return 0
+
     @singledispatchmethod
     def add_sequence(self, sequence, name=None):
         # Placeholder for unrecognized types

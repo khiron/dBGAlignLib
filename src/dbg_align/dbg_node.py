@@ -1,3 +1,4 @@
+from collections import deque
 from typing import List
 
 
@@ -55,7 +56,6 @@ class DBGNode:
                 break
             current_node = current_node.first_child
         return current_node
-
 
     def add_edge(self, target_node, sequence_index=None, passage_index=None):
         """Create a new edge to target_node if not already existing, or return existing one."""
@@ -180,7 +180,6 @@ class DBGNode:
             current_node, passage_index = current_node.next_in_sequence(sequence_index, passage_index)
         return character_count
             
-
     def get_sequence(self, sequence_index: int) -> str:
         current_node = self
         current_passage_index = 0
@@ -198,6 +197,21 @@ class DBGNode:
                     else:
                         sequence += current_node.kmer[overlap_length:] # in subsequent appends skip the overlap (eg: first 2 characters in 3mers)
         return sequence
+
+    def traverse_all(self):
+        """Traverse all nodes in the graph starting from this node."""
+        visited = set()
+        queue = deque([self])
+
+        while queue:
+            node = queue.popleft()
+            if node in visited:
+                continue
+            visited.add(node)
+            yield(node)
+            for edge in node.edges:
+                if edge.target_node not in visited:
+                    queue.append(edge.target_node)
 
     def __getitem__(self, index):
         return self.edges[index].target_node
