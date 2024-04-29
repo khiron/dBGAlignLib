@@ -8,6 +8,8 @@ author = "Richard Morris"
 author-email = "richard@khiron.com"
 home-page = "https://github.com/khiron/dBgAlign"
 classifiers = ["License :: OSI Approved :: BSD License"]
+requires = ["graphviz", "numpy", "cogent3", "IPython", "pytest"]
+
 
 [tool.flit.scripts]
 # Define your command-line scripts here

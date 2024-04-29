@@ -19,3 +19,13 @@ def mm(graph):
   """Given a string containing a Mermaid-format graph, display it."""
   graphbytes = graph.encode("ascii")
   mm_display(graphbytes)
+
+import graphviz
+
+def display_graphviz(graph):
+    """Render and display a Graphviz graph within a Jupyter Notebook."""
+    # Render the graph to a file (SVG or PNG can be used here)
+    # Note: You might need to adjust the directory path or ensure it exists
+    filename = graph.render(filename='temp_graph', format='png', cleanup=True)
+    # Display the image in the notebook
+    display(Image(filename))

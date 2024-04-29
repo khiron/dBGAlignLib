@@ -7,6 +7,7 @@ from cogent3.core.moltype import MolType
 from .dbg_edge import DBGNode
 from .dbg_traversal import DBGTraversal
 from enum import Enum
+from graphviz import Digraph
 
 class AlignmentMethod(Enum):
     RAW = "RAW"
@@ -193,7 +194,7 @@ class DeBrujinGraph:
     def __repr__(self):
         return f"dbg k:{self.kmer_length}, mol:{self.moltype}, seq's:{len(self)})"
     
-    def to_mermaid(self):
+    def to_mermaid(self, show_kmers: bool = True):
         """Generates a Mermaid graph description of the de Bruijn graph."""
         if not self.root:
             return "graph LR;"
@@ -211,10 +212,54 @@ class DeBrujinGraph:
                 target = edge.target_node
                 if target not in visited:
                     queue.append(target)
-                if node.kmer:
-                    mermaid_str += f"{node.kmer} --> {target.kmer};\n"
+                if not show_kmers:
+                    mermaid_str += f'{node.kmer}(" ") --> {target.kmer}(" ");\n'
                 else:
-                    mermaid_str += f"{node.kmer} --> {target.kmer};\n"
+                    if node.kmer:
+                        mermaid_str += f"{node.kmer} --> {target.kmer};\n"
+                    else:
+                        mermaid_str += f"{node.kmer} --> {target.kmer};\n"
         
         return mermaid_str
 
+    def to_graphviz(self, show_kmers: bool = True):
+        def sanitize_identifier(identifier):
+            # Replace spaces and special characters with underscores
+            return "".join(char if char.isalnum() else "_" for char in identifier)
+
+        """Generates a Graphviz graph description of the de Bruijn graph."""
+        if not self.root:
+            return None
+
+        dot = Digraph(comment='De Bruijn Graph')
+        dot.attr('graph', rankdir='LR')  # Lay out the graph from left to right
+
+        queue = deque([self.root])
+        visited = set()
+        
+        while queue:
+            node = queue.popleft()
+            if node in visited:
+                continue
+            visited.add(node)
+            # Node label handling
+            # Handle special case for the root node or nodes with None kmer
+            if node.kmer is None:
+                node_id = "Root"
+                node_label = "Root"  # Always label the root node as "Root"
+            else:
+                node_id = sanitize_identifier(node.kmer)
+                node_label = node.kmer if show_kmers else " "
+
+            dot.node(node_id, label=node_label)
+
+            for edge in node.edges:
+                target = edge.target_node
+                if target not in visited:
+                    queue.append(target)
+                    target_id = "Root" if target.kmer is None else sanitize_identifier(target.kmer)
+                # Edge label handling, could be more sophisticated depending on your needs
+                edge_label = str(len(edge.traversals)) if show_kmers else " "
+                dot.edge(node_id, target_id)
+
+        return dot
