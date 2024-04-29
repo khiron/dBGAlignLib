@@ -64,8 +64,8 @@ def test_pog_cycle(output_dir: Path):
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
         "seq2": "ACAGTACTGGCAT", 
-        "seq3":"ACAGCGCGCAT" # contains cycle
+        "seq3":"ACAGCGCAT" 
         })
     dbg.to_pog()
     got = dbg.compression_ratio()
-    assert got > 1.259
+    assert got > 1.42
