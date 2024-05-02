@@ -1,6 +1,5 @@
 from collections import deque
-from typing import List
-
+from typing import List, Optional, Set, Tuple
 
 class DBGNode:
     def __init__(self, kmer: str, kmer_length: int) -> None:
@@ -8,7 +7,65 @@ class DBGNode:
         self.kmer_length = kmer_length
         self.edges = []  # List of DeBrujinGraph_Edge objects
         self.parent_nodes = set()  # set of nodes that lead to this node
-        
+
+    def connect_node(self, node: "DBGNode", sequence_index: int, cycle_count: int):
+        """Connect this node to another node and return the updated cycle_count."""
+        from .dbg_edge import DBGEdge
+        # if existing edge that does not include this sequence and it has a cycle count => cycle_count then add the sequence to that edge and return the edge's cycle_count
+        for edge in self.edges:
+            if sequence_index not in edge.sequences and edge.cycle_count >= cycle_count:
+                edge.add_sequence(sequence_index)
+                return edge.cycle_count
+        # else add a new edge with the sequence and this cycle_count
+        self.edges.append(DBGEdge(node, cycle_count).add_sequence(sequence_index))
+        return cycle_count
+            
+    def next(self, sequences:Set[int], cycle_count:int) -> Tuple[Optional["DBGNode"], Optional[int]]:
+        """Return the next node in the sequence for the specified set of sequences providing its cycle count does not decrease."""
+        if self.edges:
+            seq_edges = [edge for edge in self.edges if sequences in edge.sequences]
+            if seq_edges:
+                # Find the edge with the smallest edge.cyclecount >= cycle_count
+                next_edge = min((edge for edge in seq_edges if edge.cyclecount >= cycle_count), 
+                                key=lambda edge: edge.cyclecount, default=None)
+                if next_edge:
+                    return next_edge.target_node, next_edge.cyclecount
+        return None, None
+
+    def can_transform_to_pog(self) -> bool:
+        """Check if the node can be transformed to the next node in the sequence for the specified sequence index and cycle count."""
+        if not self.edges:
+            return False # this is the last node
+        if len(self.edges) == 1:
+            return True
+        # Check that all edges point to the same target_node
+        if not all(edge.target_node == self.edges[0].target_node for edge in self.edges[1:]):
+            return False
+        # if no edge has a sequence in another edge it can be transformed
+        return not set.intersection(*[edge.sequences for edge in self.edges])
+
+    def transform_to_pog(self, cycle_count:int):
+        current_node = self
+        # find edge with the lowest cycle_count not below the current cycle_count
+        next_edge = min((edge for edge in self.edges if edge.cycle_count >= cycle_count), 
+                        key=lambda edge: edge.cycle_count, default=None)
+        while next_edge:
+            current_node = current_node.next(next_edge.sequences, next_edge.cycle_count)
+
+
+            next_node = next_edge.target_node
+            self.kmer += next_node.kmer[-1]
+            cycle_count = next_edge.cycle_count
+            # find edge on next_node with the lowest cycle_count not below the current cycle_count
+            next_edge = min((edge for edge in next_node.edges if edge.cycle_count >= cycle_count),
+
+            next_edge = next_edge.target_node.edges[0] if next_edge.target_node.edges else None
+
+            self.edges = [next_edge]
+                    
+
+
+
     @property 
     def parents(self):
         return self.parent_nodes
@@ -64,7 +121,7 @@ class DBGNode:
         for edge in self.edges:
             if edge.target_node == target_node:
                 if sequence_index is not None and any(traversal.sequence_index == sequence_index for traversal in edge.traversals):
-                    continue
+                    continue # if there is already a traversal for this sequence then we are looping so create a new edge
                 edge.add_traversal(sequence_index, passage_index)
                 return edge
         new_edge = DBGEdge(target_node)
@@ -73,12 +130,15 @@ class DBGNode:
         target_node.parent_nodes.add(self) # Add this node as a parent to the target node
         return new_edge
  
+    def can_compress(self):
+        """Check if the node can be compressed."""
+        return self.has_one_child and self.sole_child.has_single_parent
+
     def run(self):
         """Generates a list of nodes that form a linear run from this node."""
         run_nodes = [self]
         candidate = self
-        while candidate.has_one_child \
-                and candidate.sole_child.has_single_parent:
+        while candidate.can_compress():
             child = candidate.first_child
             run_nodes.append(child)
             candidate = child

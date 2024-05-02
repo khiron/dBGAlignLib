@@ -84,6 +84,14 @@ class DeBrujinGraph:
         else:
             return 0
 
+    def kmers(self, kmer: str)-> List["DBGNode"]:
+        """Returns the node for a given kmer."""
+        result = []
+        for node in self.root.traverse_all():
+            if node.kmer == kmer:
+                result.append(node)
+        return result
+
     @singledispatchmethod
     def add_sequence(self, sequence, name=None):
         # Placeholder for unrecognized types

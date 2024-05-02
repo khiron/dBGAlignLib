@@ -53,19 +53,15 @@ def test_pog_cycle(output_dir: Path):
     assert dbg["seq3"] == "ACAGCGCGCAT"
      
     dbg.to_pog()
+    assert dbg["seq1"] == "ACAGTACGGCAT"
+    assert dbg["seq2"] == "ACAGTACTGGCAT"
+    assert dbg["seq3"] == "ACAGCGCGCAT"
+    assert dbg.kmers("ACGG")
+    assert dbg.kmers("ACTGG")
+    assert dbg.kmers("AGCGCGC")
     # write mermaid out to testout folder
     with open(output_dir / "cycle_compressed.md", "w") as f:
         f.write("```mermaid\n")
         f.write(dbg.to_mermaid())
         f.write("```")
 
-def test_pog_cycle(output_dir: Path):
-    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
-    dbg.add_sequence({
-        "seq1": "ACAGTACGGCAT", 
-        "seq2": "ACAGTACTGGCAT", 
-        "seq3":"ACAGCGCAT" 
-        })
-    dbg.to_pog()
-    got = dbg.compression_ratio()
-    assert got > 1.42

@@ -4,10 +4,16 @@ from .dbg_node import DBGNode
 
 
 class DBGEdge:
-    def __init__(self, target_node: DBGNode) -> None:
+    def __init__(self, target_node: DBGNode, cycle_count: int = 0) -> None:
         self.target_node = target_node
+        self.cycle_count = cycle_count # a count of how many cycles preceded this edge
+        self.sequences = set()
         self.traversals : List[DBGTraversal] = []  
 
+    def add_sequence(self, sequence_index:int) -> "DBGEdge":
+        self.sequences.add(sequence_index)
+        return self
+    
     def add_traversal(self, sequence_index:int, passage_index:int):
         self.traversals.append(DBGTraversal(sequence_index, passage_index))
         return self
