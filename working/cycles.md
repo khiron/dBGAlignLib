@@ -30,6 +30,20 @@ GCG --CGC|GCG|CGT|GTC|TCG|CGT|GTC|TCG-->CGC--> GCA;
 AGC-->GCC-->CCG--CGT|GTC|TCG-->CGC;
 ```
 
+### Fragments
+
+```mermaid
+graph LR;
+None --> ACAG;
+ACAG --> AGTAC-->ACGG-->GGC-->GCAT;
+AGTAC-->ACTGG-->GGC;
+ACAG-->AGC-->GCGCGTGTCG-->CGC-->GCAT
+AGC-->GCCGTCG-->CGC
+
+
+```
+
+
 ## Richard's method
 
 ```mermaid
@@ -64,7 +78,7 @@ AGC--0-->GCC--0-->CCG--0-->CGT;
 
 
 ```
-
+### Fragments
 ```mermaid
 graph LR;
 None-->ACAG
@@ -73,6 +87,6 @@ AGTAC-->ACGG-->GGC
 GGC-->GCAT
 AGTAC-->ACTGG-->GGC
 
-ACAG-->AGC-->GCGCGTCG-->TCG-->CGC-->GCAT
-AGC-->GCG-->TCG
+ACAG-->AGC-->GCGTCGTC-->TCGC-->GCAT
+AGC-->GCCGTC-->TCGC
 ```
