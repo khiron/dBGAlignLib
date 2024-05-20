@@ -15,3 +15,5 @@ def test_construct_dag():
     assert dag.expected_work(AlignmentMethod.PROGRESSIVE) == 100
     # assert dag.expected_work(AlignmentMethod.DBG_LENGTH) == 9
     # assert dag.expected_work(AlignmentMethod.DBG_LENGTH_NUMBER) == 9
+    bubbles = dag.bubbles()
+    assert len(bubbles) == 1

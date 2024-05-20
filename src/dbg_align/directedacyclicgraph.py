@@ -1,8 +1,9 @@
 from functools import singledispatchmethod
-from typing import Set
+from typing import List, Set
 from .debruijngraph import DeBruijnGraph
 from .dbg_node import DBGNode
 from .dag_node import DAG_Node
+from .dag_bubble import DAG_Bubble
 from .constants import AlignmentMethod
 
 class DirectedAcyclicGraph:
@@ -47,3 +48,10 @@ class DirectedAcyclicGraph:
     
     def __getitem__(self, index):
         return self.root.sequence(index)
+    
+    def bubbles(self)->List[DAG_Bubble]:
+        # if root.edges is empty then there are no bubbles - return an empty list
+        if not self.root:
+            return []
+        else:
+            return self.root.bubbles()
