@@ -6,15 +6,11 @@ import cogent3
 from cogent3.core.moltype import MolType
 from .dbg_edge import DBGNode
 from .dbg_traversal import DBGTraversal
+from .constants import AlignmentMethod
 from enum import Enum
 from graphviz import Digraph
 
-class AlignmentMethod(Enum):
-    RAW = "RAW"
-    DBG1D = "DBG1D"
-    DBG2D = "DBG2D"
-
-class DeBrujinGraph:
+class DeBruijnGraph:
     """ A class to represent a de Bruijn graph for a set of sequences.
 
     Note: Indexes for sequences are 1 based (ie: start from 1).
@@ -32,7 +28,7 @@ class DeBrujinGraph:
         for i in range(len(sequence) - k + 1):
             yield sequence[i:i + k]
 
-    def to_pog(self)->"DeBrujinGraph":
+    def to_pog(self)->"DeBruijnGraph":
         """Compresses the graph by extending nodes until the next branch point or the end of a run."""
         visited = set()
         for node in list(self.graph.values()):
@@ -45,44 +41,22 @@ class DeBrujinGraph:
         self.is_compressed = True
         return self
 
-    def order_complexity(self, alignment_type: AlignmentMethod):
+    def expected_work(self, alignment_type: AlignmentMethod):
         """Returns the order complexity of aligninging the sequences."""
-        if alignment_type == AlignmentMethod.RAW:
+        if alignment_type == AlignmentMethod.EXACT:
             product = 1
             for _, (_, length) in self.sequence_names.items():
                 product *= length
             return product
-        elif alignment_type == AlignmentMethod.DBG1D:
-            if not self.is_compressed:
-                raise ValueError("Graph must be compressed before calculating de Brujin graph order complexity")
-                # for each level 1 bubble 
-                # sum the product of lengths of each sequence in the bubble
-            return 0 #TODO: Implement the order complexity calculation for DBG1D
-        elif alignment_type == AlignmentMethod.DBG2D:
-            if not self.is_compressed:
-                raise ValueError("Graph must be compressed before calculating de Brujin graph order complexity")
-            # for each bubble
-            # sum the product of lengths of each sequence in the bubble
-            return 0  #TODO: Implement the order complexity calculation for DBG2D
+        elif alignment_type == AlignmentMethod.PROGRESSIVE:
+            # Extract sequence lengths and sort them
+            sequence_lengths = sorted(length for _, (_, length) in self.sequence_names.items())
+            # Sum the product of each pair of consecutive lengths
+            return sum(sequence_lengths[i] * sequence_lengths[i+1] for i in range(len(sequence_lengths) - 1))
+        elif alignment_type in (AlignmentMethod.DBG_LENGTH, AlignmentMethod.DBG_LENGTH_NUMBER):
+            raise ValueError("Graph must be transformed to DirectedAcyclicGraph before calculating expected_work")
         else:
             raise ValueError("Unsupported alignment type")
-
-    def compression_ratio(self) -> int:
-        """Returns the mean kmer size of the POG over the original kmer length of the DBG that created the POG."""
-        if not self.is_compressed:
-            raise ValueError("Graph must be compressed before calculating compression ratio")
-        total_kmer_length = 0
-        node_count = 0
-
-        for node in self.root.traverse_all():
-            if node.kmer:
-                total_kmer_length += len(node.kmer)
-                node_count += 1
-
-        if node_count > 0:
-            return total_kmer_length / (node_count * self.kmer_length)
-        else:
-            return 0
 
     def kmers(self, kmer: str)-> List["DBGNode"]:
         """Returns the node for a given kmer."""

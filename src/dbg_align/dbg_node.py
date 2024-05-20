@@ -57,7 +57,6 @@ class DBGNode:
             self.kmer += next_node.kmer[-1]
             cycle_count = next_edge.cycle_count
             # find edge on next_node with the lowest cycle_count not below the current cycle_count
-            next_edge = min((edge for edge in next_node.edges if edge.cycle_count >= cycle_count),
 
             next_edge = next_edge.target_node.edges[0] if next_edge.target_node.edges else None
 

@@ -3,7 +3,7 @@ import cogent3
 import dbg_align
 
 def test_pog_reconstitutes_faithfully():
-    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
+    dbg = dbg_align.DeBruijnGraph(3,cogent3.DNA)
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
         "seq2": "ACAGTACTGGCAT", 
@@ -17,7 +17,7 @@ def test_pog_reconstitutes_faithfully():
     assert pog["seq3"] == "ACAGCGCAT"
 
 def test_compress_to_pog(output_dir: Path):
-    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
+    dbg = dbg_align.DeBruijnGraph(3,cogent3.DNA)
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
         "seq2": "ACAGTACTGGCAT", 
@@ -35,7 +35,7 @@ def test_compress_to_pog(output_dir: Path):
         f.write("```")
 
 def test_pog_cycle(output_dir: Path):
-    dbg = dbg_align.DeBrujinGraph(3,cogent3.DNA)
+    dbg = dbg_align.DeBruijnGraph(3,cogent3.DNA)
     dbg.add_sequence({
         "seq1": "ACAGTACGGCAT", 
         "seq2": "ACAGTACTGGCAT", 
