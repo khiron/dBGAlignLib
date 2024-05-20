@@ -17,3 +17,7 @@ def test_construct_dag():
     # assert dag.expected_work(AlignmentMethod.DBG_LENGTH_NUMBER) == 9
     bubbles = dag.bubbles()
     assert len(bubbles) == 1
+    assert bubbles[0].start.fragment == "AGT"
+    assert bubbles[0].end.fragment == "GCAT"
+    assert bubbles[0].depth == 0
+    assert bubbles[0].start.sequence_set == {0,1}

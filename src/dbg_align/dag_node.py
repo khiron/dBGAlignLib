@@ -34,7 +34,7 @@ class DAG_Node:
     def __repr__(self):
         return f"{self.sequence_set}:{self.fragment}:{len(self.edges)}"
 
-    def bubbles(self)->List['DAG_Bubble']:
+    def bubbles(self, depth : int = 0)->List['DAG_Bubble']:
         from .dag_bubble import DAG_Bubble
         # if there are no edges then there are no bubbles
         if not self.edges:
@@ -46,7 +46,7 @@ class DAG_Node:
                 # find the end node by following the edge
                 end = self.edges[0]
                 inner_bubbles = []
-                return [DAG_Bubble(start, end, inner_bubbles)]
+                return [DAG_Bubble(start, end, inner_bubbles, depth)]
             else:
                 start = self
                 # if there are multiple edges then we have at least 1 bubble splitting from this node
@@ -58,6 +58,6 @@ class DAG_Node:
                     if not end_candidate.edges:
                         raise ValueError("Bubble never closes")
                     end_candidate = end_candidate.edges[0]
-                inner_bubbles = first_child.bubbles()
-                return [DAG_Bubble(start, end_candidate, inner_bubbles)]
+                inner_bubbles = first_child.bubbles(depth + 1)
+                return [DAG_Bubble(start, end_candidate, inner_bubbles, depth)]
         

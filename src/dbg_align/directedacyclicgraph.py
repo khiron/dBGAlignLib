@@ -54,4 +54,8 @@ class DirectedAcyclicGraph:
         if not self.root:
             return []
         else:
-            return self.root.bubbles()
+            bubbles = self.root.bubbles()
+            # remove all leaf bubbles where the edge lengths are equal
+            return bubbles
+        
+
