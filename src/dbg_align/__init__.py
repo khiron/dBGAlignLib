@@ -9,6 +9,12 @@ from .directedacyclicgraph import DirectedAcyclicGraph
 from .dag_node import DAG_Node
 from .dag_bubble import DAG_Bubble
 from .constants import AlignmentMethod
+from .alignment_operation import AlignmentOperation
+from .composite_alignment import CompositeAlignment
+from .alignment import AlignmentPlugin, MockAlignmentPlugin
+from .allignment_buffer import AlignmentBuffer
+from .mock_alignment import MockAlignmentPlugin
+from .alignment_cost_plugin import PluginCostAlignment
 
 __version__ = "0.1.0"
 __author__ = "Richard Morris"

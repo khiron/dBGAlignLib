@@ -1,5 +1,7 @@
 from functools import singledispatchmethod
 from typing import List, Set
+
+from .allignment_buffer import AlignmentBuffer
 from .debruijngraph import DeBruijnGraph
 from .dbg_node import DBGNode
 from .dag_node import DAG_Node
@@ -58,4 +60,5 @@ class DirectedAcyclicGraph:
             # remove all leaf bubbles where the edge lengths are equal
             return bubbles
         
-
+    def align(self, buffer : AlignmentBuffer):
+        self.root.align(buffer)

@@ -1,6 +1,11 @@
 from dbg_align import DirectedAcyclicGraph, DAG_Node
+from dbg_align.alignment_cost_plugin import PluginCostAlignment
+from dbg_align.allignment_buffer import AlignmentBuffer
 from dbg_align.constants import AlignmentMethod
 
+
+def cost_alignment_plugin_factory() -> PluginCostAlignment:
+    return PluginCostAlignment()
 
 def test_construct_dag():
     dag = DirectedAcyclicGraph()
@@ -21,3 +26,8 @@ def test_construct_dag():
     assert bubbles[0].end.fragment == "GCAT"
     assert bubbles[0].depth == 0
     assert bubbles[0].start.sequence_set == {0,1}
+    assert bubbles[0].end.sequence_set == {0,1}
+    assert len(bubbles[0].inner_bubbles) == 1
+    cost_alignment = PluginCostAlignment()
+    buffer = AlignmentBuffer(cost_alignment) 
+    dag.align(buffer)
