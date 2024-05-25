@@ -91,3 +91,4 @@ class AlignmentBuffer:
         self.operations = []
         self.results = {}
         self.next_index = 0
+

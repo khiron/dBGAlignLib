@@ -64,6 +64,23 @@ class AlignmentPlugin(ABC):
         """
         pass
 
+    @abstractmethod
+    def concatenate(self, elements: list) -> Any:
+        """
+        Concatenate a list of elements into a single profile.
+
+        Parameters
+        ----------
+        elements : list
+            A list of elements to concatenate.
+
+        Returns
+        -------
+        Any
+            The resulting profile.
+        """
+        pass
+
 class MockAlignmentPlugin(AlignmentPlugin):
     def __init__(self):
         self.records: list = []
@@ -82,6 +99,17 @@ class MockAlignmentPlugin(AlignmentPlugin):
         combined_profile = CompositeAlignment([profile1, profile2])
         self.records.append(('profile', profile1, profile2))
         return combined_profile
+    
+    def concatenate(self, elements: list) -> CompositeAlignment:
+        concatenated_elements = []
+        for element in elements:
+            if isinstance(element, str):
+                concatenated_elements.append(element)
+            elif isinstance(element, CompositeAlignment):
+                concatenated_elements.append(element.concatenate())
+        concatenated_profile = CompositeAlignment(concatenated_elements)
+        self.records.append(('concatenate', elements))
+        return concatenated_profile
 
     def get_records(self) -> list:
         return self.records
