@@ -1,6 +1,12 @@
 import cogent3
 import dbg_align
 
+
+def test_create_kmers():
+    seq = 'AGCT'
+    kmers = dbg_align.DeBruijnGraph.generate_kmers(seq, 3)
+    assert list(kmers) == ['AGC', 'GCT']
+
 def test_create_empty_dbg():
     dbg = dbg_align.DeBruijnGraph(3)
     assert len(dbg) == 0
@@ -17,12 +23,14 @@ def test_create_dbg_from_string():
     assert dbg.root[0][0].kmer == "CGT"
 
 
+
 def test_has_cycles():
     dbg = dbg_align.DeBruijnGraph(3)
     dbg.add_sequence("ACGTCATGCA")
     assert not dbg.has_cycles()
     dbg.add_sequence("ACATCATGCA")
     assert dbg.has_cycles()
+    assert dbg[2] == "ACATCATGCA" 
 
 def test_create_dbg_from_list():
     dbg = dbg_align.DeBruijnGraph(3,cogent3.DNA)
@@ -74,3 +82,4 @@ def test_cycle():
     assert not dbg.has_cycles()
     dbg.add_sequence("ACATCATGCA")
     assert dbg.has_cycles()
+

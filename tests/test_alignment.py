@@ -1,5 +1,7 @@
 from dbg_align.alignment_cost_plugin import PluginCostAlignment, ProfileCostAlignment, TotalCost
 from dbg_align.allignment_buffer import AlignmentBuffer
+from dbg_align.partialordergraph import PartialOrderGraph
+from dbg_align import partialordergraph
 
 def test_cost_calculation():
     cost_alignment = PluginCostAlignment()
@@ -51,6 +53,21 @@ def test_alignment_buffer():
 
     assert TotalCost(buffer).cost == (64, 118), f"Expected (64, 118), but got {TotalCost(buffer).cost}"
 
+def test_dbg_to_cost_alignment():
+    from dbg_align import DeBruijnGraph, AlignmentMethod
+    from dbg_align.alignment_cost_plugin import PluginCostAlignment
+    from dbg_align.allignment_buffer import AlignmentBuffer
+
+    graph = DeBruijnGraph(3)
+    graph.add_sequence({
+        "seq1": "ACAGTACGGCAT", #12
+        "seq2": "ACAGTACTGGCAT", #13
+        "seq3": "ACAGCGCAT" #9
+        })
+
+    dag = PartialOrderGraph(graph)    
+    assert dag.expected_work(AlignmentMethod.PROGRESSIVE) == 9 * 12 + 12 * 13 
+    assert dag.expected_work(AlignmentMethod.DBG_LENGTH_NUMBER) == 2 * 3 + 7 * 3 
 
 
 

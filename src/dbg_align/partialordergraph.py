@@ -4,25 +4,21 @@ from typing import List, Set
 from .allignment_buffer import AlignmentBuffer
 from .debruijngraph import DeBruijnGraph
 from .dbg_node import DBGNode
-from .dag_node import DAG_Node
-from .dag_bubble import DAG_Bubble
+from .pog_node import POG_Node
+from .pog_bubble import POG_Bubble
 from .constants import AlignmentMethod
 
-class DirectedAcyclicGraph:
+class PartialOrderGraph:
     def __init__(self, debruijn_graph : DeBruijnGraph = None):
         if debruijn_graph is None:
             self.root = None
             self.sequence_names = {}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
         else:
             self.sequence_names = debruijn_graph.sequence_names
-            self.root = self.transform_dbg_to_dag(debruijn_graph.root)
+            self.root = self.transform_dbg_to_pog(debruijn_graph.root)
 
-    def transform_dbg_to_dag(self, dbg_node : DBGNode):
-        dag_node = DirectedAcyclicGraph.Node(dbg_node.sequence)
-        for edge in dbg_node.edges:
-            if edge.to_node is not None:
-                dag_node.add_edge(self.transform_dbg_to_dag(edge.to_node))
-        return dag_node
+    def transform_dbg_to_pog(self, dbg_node : DBGNode):
+        self.root = dbg_node.transform_to_pog()
     
     def expected_work(self, alignment_type: AlignmentMethod):
         """Returns the order complexity of aligninging the sequences."""
@@ -51,7 +47,7 @@ class DirectedAcyclicGraph:
     def __getitem__(self, index):
         return self.root.sequence(index)
     
-    def bubbles(self)->List[DAG_Bubble]:
+    def bubbles(self)->List[POG_Bubble]:
         # if root.edges is empty then there are no bubbles - return an empty list
         if not self.root:
             return []

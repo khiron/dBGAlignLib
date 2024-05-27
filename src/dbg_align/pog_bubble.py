@@ -1,10 +1,10 @@
 from __future__ import annotations # this is needed for forward references in type hints
 from typing import List
-from dbg_align.dag_node import DAG_Node
+from dbg_align.pog_node import POG_Node
 
 
-class DAG_Bubble:
-    def __init__(self, start : DAG_Node, end : DAG_Node, inner_bubbles: List[DAG_Bubble] = None, depth : int = 0):
+class POG_Bubble:
+    def __init__(self, start : POG_Node, end : POG_Node, inner_bubbles: List[POG_Bubble] = None, depth : int = 0):
         self.start = start
         self.end = end
         self.depth = depth

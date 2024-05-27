@@ -1,13 +1,10 @@
 from collections import deque
 from functools import singledispatchmethod
-from typing import List, Union
+from typing import Union
 
 import cogent3
 from cogent3.core.moltype import MolType
-from .dbg_edge import DBGNode
-from .dbg_traversal import DBGTraversal
 from .constants import AlignmentMethod
-from enum import Enum
 from graphviz import Digraph
 
 class DeBruijnGraph:
@@ -16,8 +13,9 @@ class DeBruijnGraph:
     Note: Indexes for sequences are 1 based (ie: start from 1).
     """
     def __init__(self, kmer_length: int, moltype: MolType = cogent3.DNA):
+        from .dbg_node import DBGNode
         self.kmer_length = kmer_length
-        self.root = DBGNode(kmer = None, kmer_length = kmer_length)  # Root node of the graph
+        self.root = DBGNode(kmer = None)  # Root node of the graph
         self.graph = {}
         self.moltype = moltype
         self.sequence_names = {}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
@@ -54,17 +52,9 @@ class DeBruijnGraph:
             # Sum the product of each pair of consecutive lengths
             return sum(sequence_lengths[i] * sequence_lengths[i+1] for i in range(len(sequence_lengths) - 1))
         elif alignment_type in (AlignmentMethod.DBG_LENGTH, AlignmentMethod.DBG_LENGTH_NUMBER):
-            raise ValueError("Graph must be transformed to DirectedAcyclicGraph before calculating expected_work")
+            raise ValueError("Graph must be transformed to PartialOrderGraph before calculating expected_work")
         else:
             raise ValueError("Unsupported alignment type")
-
-    def kmers(self, kmer: str)-> List["DBGNode"]:
-        """Returns the node for a given kmer."""
-        result = []
-        for node in self.root.traverse_all():
-            if node.kmer == kmer:
-                result.append(node)
-        return result
 
     @singledispatchmethod
     def add_sequence(self, sequence, name=None):
@@ -73,7 +63,9 @@ class DeBruijnGraph:
 
     @add_sequence.register(str)
     def _(self, sequence: str, name=None):
-        # check string for characcters in alphabet
+        from .dbg_edge import DBGEdge, DBGNode
+        
+        # check string for characters in alphabet
         self.moltype.verify_sequence(sequence)
         if len(sequence) < self.kmer_length:
             raise ValueError("Sequence is shorter than kmer length")
@@ -83,17 +75,29 @@ class DeBruijnGraph:
         self.sequence_names[name] = (sequence_index, len(sequence))
         # Convert the sequence into kmers and add them to the graph
         current_node = self.root
-        passage_index = 0
         for kmer in self.generate_kmers(sequence, self.kmer_length):
             next_node = self.graph.get(kmer)
-            if next_node is None:
-                next_node = DBGNode(kmer, self.kmer_length)
+            if not next_node: # Node doens't exist it, add it and make an edge for this sequence to it or connect a cycle edge to it
+                next_node = DBGNode(kmer)
                 self.graph[kmer] = next_node
-            current_node.add_edge(target_node= next_node, 
-                                  sequence_index=sequence_index,
-                                  passage_index=passage_index)
-            current_node = next_node
-            passage_index += 1
+                cycle_edge = current_node.get_cycle_edge(sequence_index)
+                if cycle_edge: # it's a cycle we can close
+                    cycle_edge.target_node = next_node
+                else:    
+                    current_node.edges.append(DBGEdge(target_node=next_node, sequence_index=sequence_index)) 
+                current_node = next_node
+            else: # Node already exists, check if we have an edge for this sequence
+                cycle_edge = current_node.get_cycle_edge(sequence_index)
+                if cycle_edge: # it's a cycle
+                    cycle_edge.cycle += kmer[-1]
+                    # keep current node the same
+                else: # create a cycle_edge
+                    if next_node.get_edge(sequence_index):# This sequence already passes through this node
+                        current_node.edges.append(DBGEdge(target_node=None, sequence_index=sequence_index, cycle=kmer[-1]))
+                        # keep current node the same
+                    else:
+                        current_node.edges.append(DBGEdge(target_node=next_node, sequence_index=sequence_index))
+                        current_node = next_node
 
     @add_sequence.register(cogent3.Sequence)
     def _(self, sequence: cogent3.Sequence, name=None):
@@ -130,14 +134,8 @@ class DeBruijnGraph:
     def has_cycles(self):
         """Returns True if the graph contains cycles."""
         for node in self.graph.values():
-            if node.has_cycle():
-                return True
-        return False
-    
-    def has_bubbles(self)-> bool:
-        """Returns True if the graph contains bubbles."""
-        for node in self.graph.values():
-            if node.has_bubble():
+            # if any node.edge has a non-empty cycle list then there is a cycle
+            if any(edge.cycle for edge in node.edges):
                 return True
         return False
     
@@ -198,7 +196,8 @@ class DeBruijnGraph:
         if not self.root:
             return "graph LR;"
 
-        mermaid_str = "graph LR;\n"
+        mermaid_str = "graph LR;\n "
+        mermaid_str += "s(start);\n e(end);\n "
         queue = deque([self.root])
         visited = set()
         
@@ -211,14 +210,18 @@ class DeBruijnGraph:
                 target = edge.target_node
                 if target not in visited:
                     queue.append(target)
-                if not show_kmers:
-                    mermaid_str += f'{node.kmer}(" ") --> {target.kmer}(" ");\n'
+
+                hide_kmers = '(" ")' if not show_kmers else ''    
+                if node == self.root:
+                    mermaid_str += f's --> {target.kmer};\n'
                 else:
-                    if node.kmer:
-                        mermaid_str += f"{node.kmer} --> {target.kmer};\n"
+                    if edge.cycle:
+                        mermaid_str += f"{node.kmer}{hide_kmers} --{','.join(edge.cycle)}--> {target.kmer}{hide_kmers};\n"
                     else:
-                        mermaid_str += f"{node.kmer} --> {target.kmer};\n"
-        
+                        mermaid_str += f"{node.kmer}{hide_kmers} --> {target.kmer}{hide_kmers};\n"
+        for i in range(1, len(self)+1):
+            kmer = self[i][-3:]
+            mermaid_str += f"{kmer} --> e;\n"
         return mermaid_str
 
     def to_graphviz(self, show_kmers: bool = True):
