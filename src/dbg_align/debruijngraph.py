@@ -27,17 +27,9 @@ class DeBruijnGraph:
             yield sequence[i:i + k]
 
     def to_pog(self)->"DeBruijnGraph":
-        """Compresses the graph by extending nodes until the next branch point or the end of a run."""
-        visited = set()
-        for node in list(self.graph.values()):
-            if node not in visited:
-                run_nodes = node.run()
-                if len(run_nodes) > 1:
-                    node.compress(run_nodes)  # Compress the entire run starting from 'node'
-                    visited.update(run_nodes)  # Mark all nodes in the run as visited
-        self.graph = {} 
-        self.is_compressed = True
-        return self
+        from .partialordergraph import PartialOrderGraph
+        pog = PartialOrderGraph(self)
+        return pog
 
     def expected_work(self, alignment_type: AlignmentMethod):
         """Returns the order complexity of aligninging the sequences."""
@@ -87,8 +79,8 @@ class DeBruijnGraph:
                     current_node.edges.append(DBGEdge(target_node=next_node, sequence_index=sequence_index)) 
                 current_node = next_node
             else: # Node already exists, check if we have an edge for this sequence
-                cycle_edge = current_node.get_cycle_edge(sequence_index)
-                if cycle_edge: # it's a cycle
+                if next_node.get_cycle_edge(sequence_index): # it's a cycle if the next node has an edge for this sequence
+                    cycle_edge = current_node.get_cycle_edge(sequence_index)
                     cycle_edge.cycle += kmer[-1]
                     # keep current node the same
                 else: # create a cycle_edge
@@ -96,7 +88,11 @@ class DeBruijnGraph:
                         current_node.edges.append(DBGEdge(target_node=None, sequence_index=sequence_index, cycle=kmer[-1]))
                         # keep current node the same
                     else:
-                        current_node.edges.append(DBGEdge(target_node=next_node, sequence_index=sequence_index))
+                        cycle_edge = current_node.get_cycle_edge(sequence_index)
+                        if cycle_edge: # it's a cycle we can close
+                            cycle_edge.target_node = next_node
+                        else:    
+                            current_node.edges.append(DBGEdge(target_node=next_node, sequence_index=sequence_index)) 
                         current_node = next_node
 
     @add_sequence.register(cogent3.Sequence)
@@ -200,12 +196,17 @@ class DeBruijnGraph:
         mermaid_str += "s(start);\n e(end);\n "
         queue = deque([self.root])
         visited = set()
+        termini = []
         
         while queue:
             node = queue.popleft()
             if node in visited:
                 continue
             visited.add(node)
+            if not node:
+                continue
+            if not node.edges:
+                termini.append(node)
             for edge in node.edges:
                 target = edge.target_node
                 if target not in visited:
@@ -216,12 +217,17 @@ class DeBruijnGraph:
                     mermaid_str += f's --> {target.kmer};\n'
                 else:
                     if edge.cycle:
-                        mermaid_str += f"{node.kmer}{hide_kmers} --{','.join(edge.cycle)}--> {target.kmer}{hide_kmers};\n"
+                        if not target:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --{','.join(edge.cycle)}--> e;\n"
+                        else:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --{','.join(edge.cycle)}--> {target.kmer}{hide_kmers};\n"
                     else:
-                        mermaid_str += f"{node.kmer}{hide_kmers} --> {target.kmer}{hide_kmers};\n"
-        for i in range(1, len(self)+1):
-            kmer = self[i][-3:]
-            mermaid_str += f"{kmer} --> e;\n"
+                        if not target:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --> e;\n"
+                        else:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --> {target.kmer}{hide_kmers};\n"
+        for node in termini:
+            mermaid_str += f"{node.kmer} --> e;\n"
         return mermaid_str
 
     def to_graphviz(self, show_kmers: bool = True):

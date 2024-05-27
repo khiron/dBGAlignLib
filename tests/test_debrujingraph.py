@@ -22,8 +22,6 @@ def test_create_dbg_from_string():
     assert dbg.root[0].__repr__() == "Node:(ACG) [CGT]"
     assert dbg.root[0][0].kmer == "CGT"
 
-
-
 def test_has_cycles():
     dbg = dbg_align.DeBruijnGraph(3)
     dbg.add_sequence("ACGTCATGCA")
@@ -60,17 +58,21 @@ def test_create_dbg_from_dict():
     assert dbg['seq2'] == "ACAGTACTGGCAT"
     assert dbg['seq3'] == "ACAGCGCAT"
 
-def test_counts():
+def test_create_dbg_from_cogent3_sequences():
     dbg = dbg_align.DeBruijnGraph(3,cogent3.DNA)
+    seq1 = cogent3.DNA.make_seq("ACAGTACGGCAT")
+    seq2 = cogent3.DNA.make_seq("ACAGTACTGGCAT")
+    seq3 = cogent3.DNA.make_seq("ACAGCGCAT")
     dbg.add_sequence({
-        "seq1": "ACAGTACGGCAT", 
-        "seq2": "ACAGTACTGGCAT", 
-        "seq3":"ACAGCGCAT"
+        "seq1": seq1, 
+        "seq2": seq2, 
+        "seq3": seq3
         })
-    
-    assert dbg.sequence_length(1) == 12
-    assert dbg.sequence_length(2) == 13
-    assert dbg.sequence_length(3) == 9
+    assert len(dbg) == 3
+    assert dbg.names() == ["seq1", "seq2", "seq3"]
+    assert dbg[1] == "ACAGTACGGCAT"
+    assert dbg[2] == "ACAGTACTGGCAT"
+    assert dbg[3] == "ACAGCGCAT"
 
 def test_cycle():
     dbg = dbg_align.DeBruijnGraph(3,cogent3.DNA)
@@ -82,4 +84,3 @@ def test_cycle():
     assert not dbg.has_cycles()
     dbg.add_sequence("ACATCATGCA")
     assert dbg.has_cycles()
-

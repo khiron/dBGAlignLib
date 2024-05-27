@@ -18,6 +18,31 @@ class POG_Node:
             raise TypeError(f"Unsupported type {type(to_node)} for addition")
         return self
 
+    @classmethod
+    def from_dbg_node(cls, dbg_node : 'DBGNode', sequence_set: Set[int], read_full_kmer : bool = False):
+        from .dbg_node import DBGNode
+        if dbg_node.kmer == None: # is special case of root node
+            instance = cls(None, sequence_set)
+            for edge in dbg_node.edges:
+                instance += cls.from_dbg_node(edge.target_node, edge.sequences, True) # read the full kmer
+        else:
+            node = dbg_node
+            kmer = node.kmer if read_full_kmer else node.kmer[-1]
+            instance = cls(kmer, sequence_set)  
+
+            
+
+
+
+            while node and len(node.edges) == 1: # extend POG node until we reach a branch
+                node = node.edges[0].target_node
+                instance.fragment += node.kmer[-1]
+            if not node:
+                return instance
+            for edge in node.edges:
+                instance += cls.from_dbg_node(edge.target_node, edge.sequences, False)
+
+
     def __getitem__(self, index):
         return self.edges[index]
     

@@ -34,7 +34,7 @@ class DBGNode:
    
     def get_edge(self, sequence_id : int) -> Optional["DBGEdge"]:
         for edge in self.edges:
-            if sequence_id in edge.sequences:
+            if sequence_id == edge.sequence:
                 return edge
         return None
 
@@ -46,7 +46,7 @@ class DBGNode:
 
     def get_cycle_edge(self, sequence_id : int)-> "DBGEdge":
         for edge in self.edges:
-            if sequence_id in edge.sequences:
+            if sequence_id == edge.sequence:
                 if not edge.target_node:
                     return edge
         return None

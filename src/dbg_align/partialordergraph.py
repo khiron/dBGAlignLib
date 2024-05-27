@@ -14,11 +14,12 @@ class PartialOrderGraph:
             self.root = None
             self.sequence_names = {}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
         else:
-            self.sequence_names = debruijn_graph.sequence_names
-            self.root = self.transform_dbg_to_pog(debruijn_graph.root)
+            self.sequence_names = debruijn_graph.sequence_names # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
+            self.transform_dbg_to_pog(debruijn_graph.root)
 
-    def transform_dbg_to_pog(self, dbg_node : DBGNode):
-        self.root = dbg_node.transform_to_pog()
+    def transform_dbg_to_pog(self, node : DBGNode):
+        sequence_set = {value[0] for value in self.sequence_names.values()}
+        self.root = POG_Node.from_dbg_node(node, sequence_set, read_full_kmer=True)
     
     def expected_work(self, alignment_type: AlignmentMethod):
         """Returns the order complexity of aligninging the sequences."""
