@@ -1,5 +1,5 @@
 from functools import singledispatchmethod
-from typing import List, Set
+from typing import List, Set, Union
 
 from .allignment_buffer import AlignmentBuffer
 from .debruijngraph import DeBruijnGraph
@@ -45,8 +45,40 @@ class PartialOrderGraph:
     def __len__(self):
         return len(self.sequence_names)
     
-    def __getitem__(self, index):
-        return self.root.sequence(index)
+    @singledispatchmethod
+    def __getitem__(self, index: Union[int, str]):
+        raise TypeError("Index must be a string or an integer")
+
+    @__getitem__.register
+    def _(self, index: int):
+        if index < 1 or index > len(self):
+            raise IndexError("Sequence index out of range")
+        # Start the sequence reconstruction from the root node
+        sequence = self.root.sequence(index)
+        return sequence
+
+    def index_for_name(self, name: str)->int:
+        """Returns the index for a sequence name."""
+        seq = self.sequence_names[name]
+        if not seq:
+            raise KeyError(f"Sequence name '{name}' not found")
+        return seq[0]
+    
+    def len_for_name(self, name: str)->int:
+        """Returns the length for a sequence name."""
+        seq = self.sequence_names[name]
+        if not seq:
+            raise KeyError(f"Sequence name '{name}' not found")
+        return seq[1]
+
+    @__getitem__.register
+    def _(self, name: str):
+        if name not in self.sequence_names:
+            raise KeyError(f"Sequence name '{name}' not found")
+        sequence_index = self.index_for_name(name)
+        # Start the sequence reconstruction from the root node
+        sequence = self.root.sequence(sequence_index)
+        return sequence
     
     def bubbles(self)->List[POG_Bubble]:
         # if root.edges is empty then there are no bubbles - return an empty list
@@ -59,3 +91,7 @@ class PartialOrderGraph:
         
     def align(self, buffer : AlignmentBuffer):
         self.root.align(buffer)
+
+    def names(self):
+        """Returns an iterable collection of sequence names."""
+        return list(self.sequence_names.keys())

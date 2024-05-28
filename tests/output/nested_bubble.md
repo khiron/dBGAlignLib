@@ -31,6 +31,4 @@ GGC --> GCA;
 GGC --> GCA;
 TGG --> GGC;
 CAT --> e;
-CAT --> e;
-CAT --> e;
 ```

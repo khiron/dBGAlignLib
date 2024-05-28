@@ -62,18 +62,10 @@ def test_pog_cycle(output_dir: Path):
     assert dbg["seq2"] == "ACAGTACTGGCAT"
     assert dbg["seq3"] == "ACAGCGCGCAT"
      
-    dbg.to_pog()
-    assert dbg["seq1"] == "ACAGTACGGCAT"
-    assert dbg["seq2"] == "ACAGTACTGGCAT"
-    assert dbg["seq3"] == "ACAGCGCGCAT"
-    assert dbg.kmers("ACGG")
-    assert dbg.kmers("ACTGG")
-    assert dbg.kmers("AGCGCGC")
-    # write mermaid out to testout folder
-    with open(output_dir / "cycle_compressed.md", "w") as f:
-        f.write("```mermaid\n")
-        f.write(dbg.to_mermaid())
-        f.write("```")
+    pog = dbg.to_pog()
+    assert pog["seq1"] == "ACAGTACGGCAT"
+    assert pog["seq2"] == "ACAGTACTGGCAT"
+    assert pog["seq3"] == "ACAGCGCGCAT"
 
 
 def test_construct_pog():

@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 class DBGNode:
     def __init__(self, kmer: str) -> None:
@@ -57,8 +57,24 @@ class DBGNode:
             return edge.target_node
         return None
 
+    def add_edge(self, edge: "DBGEdge"):
+        self.edges.append(edge)
+
+    def edges_form_single_braid(self) -> bool:
+        if not self.edges:
+            return False
+        target_node_iter = iter(self.edges)
+        first_target_node = next(target_node_iter).target_node
+        return all(edge.target_node == first_target_node for edge in target_node_iter) # short circcuited for performance
+
+    def get_braids(self)-> Dict["DBGNode", Set[int]]:
+        return {edge.target_node: {e.sequence for e in self.edges if e.target_node == edge.target_node} for edge in self.edges}
+
     def __getitem__(self, index):
         return self.edges[index].target_node
     
     def __repr__(self):
         return f"Node:({self.kmer}) [{','.join([edge.target_node.kmer for edge in self.edges if edge.target_node is not None])}]"
+    
+    def __str__(self):
+        return self.kmer
