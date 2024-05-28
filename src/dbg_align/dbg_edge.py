@@ -1,29 +1,14 @@
-from typing import List
-from .dbg_traversal import DBGTraversal
 from .dbg_node import DBGNode
 
-
 class DBGEdge:
-    def __init__(self, target_node: DBGNode) -> None:
+    def __init__(self, target_node: DBGNode, sequence_index : int = None, cycle : str = "") -> None:
         self.target_node = target_node
-        self.traversals : List[DBGTraversal] = []  
-
-    def add_traversal(self, sequence_index:int, passage_index:int):
-        self.traversals.append(DBGTraversal(sequence_index, passage_index))
-        return self
+        self.sequence = sequence_index
+        self.cycle = cycle
 
     def __repr__(self):
-        return f"Edge to {self.target_node.kmer} ({len(self.traversals)} traversals)"
+        return f"Edge ->{self.target_node.kmer} seq: ({self.sequences})"
     
     def label(self):
-        return f"{[(t.sequence_index, t.passage_index) for t in self.traversals]}"
+        return f"{','.join(self.sequences)}"
     
-    def traversals_for_sequence(self, sequence_index:int):
-        return [traversal for traversal in self.traversals if traversal.sequence_index == sequence_index]
-    
-    def next_node(self, sequence_index:int, passage_index:int):
-        traversals = self.traversals_for_sequence(sequence_index)
-        for traversal in traversals:
-            if traversal.passage_index == passage_index:
-                return self.target_node
-        return None

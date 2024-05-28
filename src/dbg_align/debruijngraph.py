@@ -1,27 +1,21 @@
 from collections import deque
 from functools import singledispatchmethod
-from typing import List, Union
+from typing import Union
 
 import cogent3
 from cogent3.core.moltype import MolType
-from .dbg_edge import DBGNode
-from .dbg_traversal import DBGTraversal
-from enum import Enum
+from .constants import AlignmentMethod
 from graphviz import Digraph
 
-class AlignmentMethod(Enum):
-    RAW = "RAW"
-    DBG1D = "DBG1D"
-    DBG2D = "DBG2D"
-
-class DeBrujinGraph:
+class DeBruijnGraph:
     """ A class to represent a de Bruijn graph for a set of sequences.
 
     Note: Indexes for sequences are 1 based (ie: start from 1).
     """
     def __init__(self, kmer_length: int, moltype: MolType = cogent3.DNA):
+        from .dbg_node import DBGNode
         self.kmer_length = kmer_length
-        self.root = DBGNode(kmer = None, kmer_length = kmer_length)  # Root node of the graph
+        self.root = DBGNode(kmer = None)  # Root node of the graph
         self.graph = {}
         self.moltype = moltype
         self.sequence_names = {}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
@@ -32,57 +26,27 @@ class DeBrujinGraph:
         for i in range(len(sequence) - k + 1):
             yield sequence[i:i + k]
 
-    def to_pog(self)->"DeBrujinGraph":
-        """Compresses the graph by extending nodes until the next branch point or the end of a run."""
-        visited = set()
-        for node in list(self.graph.values()):
-            if node not in visited:
-                run_nodes = node.run()
-                if len(run_nodes) > 1:
-                    node.compress(run_nodes)  # Compress the entire run starting from 'node'
-                    visited.update(run_nodes)  # Mark all nodes in the run as visited
-        self.graph = {} 
-        self.is_compressed = True
-        return self
+    def to_pog(self)->"DeBruijnGraph":
+        from .partialordergraph import PartialOrderGraph
+        pog = PartialOrderGraph(self)
+        return pog
 
-    def order_complexity(self, alignment_type: AlignmentMethod):
+    def expected_work(self, alignment_type: AlignmentMethod):
         """Returns the order complexity of aligninging the sequences."""
-        if alignment_type == AlignmentMethod.RAW:
+        if alignment_type == AlignmentMethod.EXACT:
             product = 1
             for _, (_, length) in self.sequence_names.items():
                 product *= length
             return product
-        elif alignment_type == AlignmentMethod.DBG1D:
-            if not self.is_compressed:
-                raise ValueError("Graph must be compressed before calculating de Brujin graph order complexity")
-                # for each level 1 bubble 
-                # sum the product of lengths of each sequence in the bubble
-            return 0 #TODO: Implement the order complexity calculation for DBG1D
-        elif alignment_type == AlignmentMethod.DBG2D:
-            if not self.is_compressed:
-                raise ValueError("Graph must be compressed before calculating de Brujin graph order complexity")
-            # for each bubble
-            # sum the product of lengths of each sequence in the bubble
-            return 0  #TODO: Implement the order complexity calculation for DBG2D
+        elif alignment_type == AlignmentMethod.PROGRESSIVE:
+            # Extract sequence lengths and sort them
+            sequence_lengths = sorted(length for _, (_, length) in self.sequence_names.items())
+            # Sum the product of each pair of consecutive lengths
+            return sum(sequence_lengths[i] * sequence_lengths[i+1] for i in range(len(sequence_lengths) - 1))
+        elif alignment_type in (AlignmentMethod.DBG_LENGTH, AlignmentMethod.DBG_LENGTH_NUMBER):
+            raise ValueError("Graph must be transformed to PartialOrderGraph before calculating expected_work")
         else:
             raise ValueError("Unsupported alignment type")
-
-    def compression_ratio(self) -> int:
-        """Returns the mean kmer size of the POG over the original kmer length of the DBG that created the POG."""
-        if not self.is_compressed:
-            raise ValueError("Graph must be compressed before calculating compression ratio")
-        total_kmer_length = 0
-        node_count = 0
-
-        for node in self.root.traverse_all():
-            if node.kmer:
-                total_kmer_length += len(node.kmer)
-                node_count += 1
-
-        if node_count > 0:
-            return total_kmer_length / (node_count * self.kmer_length)
-        else:
-            return 0
 
     @singledispatchmethod
     def add_sequence(self, sequence, name=None):
@@ -91,7 +55,9 @@ class DeBrujinGraph:
 
     @add_sequence.register(str)
     def _(self, sequence: str, name=None):
-        # check string for characcters in alphabet
+        from .dbg_edge import DBGEdge, DBGNode
+        
+        # check string for characters in alphabet
         self.moltype.verify_sequence(sequence)
         if len(sequence) < self.kmer_length:
             raise ValueError("Sequence is shorter than kmer length")
@@ -101,17 +67,33 @@ class DeBrujinGraph:
         self.sequence_names[name] = (sequence_index, len(sequence))
         # Convert the sequence into kmers and add them to the graph
         current_node = self.root
-        passage_index = 0
         for kmer in self.generate_kmers(sequence, self.kmer_length):
             next_node = self.graph.get(kmer)
-            if next_node is None:
-                next_node = DBGNode(kmer, self.kmer_length)
+            if not next_node: # Node doens't exist it, add it and make an edge for this sequence to it or connect a cycle edge to it
+                next_node = DBGNode(kmer)
                 self.graph[kmer] = next_node
-            current_node.add_edge(target_node= next_node, 
-                                  sequence_index=sequence_index,
-                                  passage_index=passage_index)
-            current_node = next_node
-            passage_index += 1
+                cycle_edge = current_node.get_cycle_edge(sequence_index)
+                if cycle_edge: # it's a cycle we can close
+                    cycle_edge.target_node = next_node
+                else:    
+                    current_node.edges.append(DBGEdge(target_node=next_node, sequence_index=sequence_index)) 
+                current_node = next_node
+            else: # Node already exists, check if we have an edge for this sequence
+                if next_node.get_cycle_edge(sequence_index): # it's a cycle if the next node has an edge for this sequence
+                    cycle_edge = current_node.get_cycle_edge(sequence_index)
+                    cycle_edge.cycle += kmer[-1]
+                    # keep current node the same
+                else: # create a cycle_edge
+                    if next_node.get_edge(sequence_index):# This sequence already passes through this node
+                        current_node.edges.append(DBGEdge(target_node=None, sequence_index=sequence_index, cycle=kmer[-1]))
+                        # keep current node the same
+                    else:
+                        cycle_edge = current_node.get_cycle_edge(sequence_index)
+                        if cycle_edge: # it's a cycle we can close
+                            cycle_edge.target_node = next_node
+                        else:    
+                            current_node.edges.append(DBGEdge(target_node=next_node, sequence_index=sequence_index)) 
+                        current_node = next_node
 
     @add_sequence.register(cogent3.Sequence)
     def _(self, sequence: cogent3.Sequence, name=None):
@@ -148,14 +130,8 @@ class DeBrujinGraph:
     def has_cycles(self):
         """Returns True if the graph contains cycles."""
         for node in self.graph.values():
-            if node.has_cycle():
-                return True
-        return False
-    
-    def has_bubbles(self)-> bool:
-        """Returns True if the graph contains bubbles."""
-        for node in self.graph.values():
-            if node.has_bubble():
+            # if any node.edge has a non-empty cycle list then there is a cycle
+            if any(edge.cycle for edge in node.edges):
                 return True
         return False
     
@@ -216,27 +192,42 @@ class DeBrujinGraph:
         if not self.root:
             return "graph LR;"
 
-        mermaid_str = "graph LR;\n"
+        mermaid_str = "graph LR;\n "
+        mermaid_str += "s(start);\n e(end);\n "
         queue = deque([self.root])
         visited = set()
+        termini = []
         
         while queue:
             node = queue.popleft()
             if node in visited:
                 continue
             visited.add(node)
+            if not node:
+                continue
+            if not node.edges:
+                termini.append(node)
             for edge in node.edges:
                 target = edge.target_node
                 if target not in visited:
                     queue.append(target)
-                if not show_kmers:
-                    mermaid_str += f'{node.kmer}(" ") --> {target.kmer}(" ");\n'
+
+                hide_kmers = '(" ")' if not show_kmers else ''    
+                if node == self.root:
+                    mermaid_str += f's --> {target.kmer};\n'
                 else:
-                    if node.kmer:
-                        mermaid_str += f"{node.kmer} --> {target.kmer};\n"
+                    if edge.cycle:
+                        if not target:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --{','.join(edge.cycle)}--> e;\n"
+                        else:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --{','.join(edge.cycle)}--> {target.kmer}{hide_kmers};\n"
                     else:
-                        mermaid_str += f"{node.kmer} --> {target.kmer};\n"
-        
+                        if not target:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --> e;\n"
+                        else:
+                            mermaid_str += f"{node.kmer}{hide_kmers} --> {target.kmer}{hide_kmers};\n"
+        for node in termini:
+            mermaid_str += f"{node.kmer} --> e;\n"
         return mermaid_str
 
     def to_graphviz(self, show_kmers: bool = True):

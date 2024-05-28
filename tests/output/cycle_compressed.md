@@ -1,16 +1,23 @@
 ```mermaid
 graph LR;
-None --> ACAG;
-ACAG --> AGTAC;
-ACAG --> AGC;
-AGTAC --> ACGG;
-AGTAC --> ACTGG;
+s((start)) --> ACA--> CAG;
+s((start)) --> ACA--> CAG;
+CAG --> AGT-->GTA-->TAC-->ACT-->CTG-->TGC-->GCA-->CAT;
+CAG --> AGC;
 AGC --> GCG;
-ACGG --> GGC;
-ACTGG --> GGC;
 GCG --> CGC;
 GCG --> CGC;
-GGC --> GCAT;
 CGC --> GCG;
-CGC --> GCAT;
+CGC --> GCA;
+GCA --> CAT;
+```
+
+
+```mermaid
+graph LR;
+s((start))-->ACAG
+ACAG --> CGCGC --> AT;
+AT-->e((end))
+s-->ACAG --> TACTGC-->AT;
+AT-->e;
 ```
