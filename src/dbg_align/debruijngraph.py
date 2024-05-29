@@ -4,7 +4,6 @@ from typing import Union
 
 import cogent3
 from cogent3.core.moltype import MolType
-from .constants import AlignmentMethod
 from graphviz import Digraph
 
 class DeBruijnGraph:
@@ -30,23 +29,6 @@ class DeBruijnGraph:
         from .partialordergraph import PartialOrderGraph
         pog = PartialOrderGraph(self)
         return pog
-
-    def expected_work(self, alignment_type: AlignmentMethod):
-        """Returns the order complexity of aligninging the sequences."""
-        if alignment_type == AlignmentMethod.EXACT:
-            product = 1
-            for _, (_, length) in self.sequence_names.items():
-                product *= length
-            return product
-        elif alignment_type == AlignmentMethod.PROGRESSIVE:
-            # Extract sequence lengths and sort them
-            sequence_lengths = sorted(length for _, (_, length) in self.sequence_names.items())
-            # Sum the product of each pair of consecutive lengths
-            return sum(sequence_lengths[i] * sequence_lengths[i+1] for i in range(len(sequence_lengths) - 1))
-        elif alignment_type in (AlignmentMethod.DBG_LENGTH, AlignmentMethod.DBG_LENGTH_NUMBER):
-            raise ValueError("Graph must be transformed to PartialOrderGraph before calculating expected_work")
-        else:
-            raise ValueError("Unsupported alignment type")
 
     @singledispatchmethod
     def add_sequence(self, sequence, name=None):
@@ -80,7 +62,9 @@ class DeBruijnGraph:
                 current_node = next_node
             else: # Node already exists, check if we have an edge for this sequence
                 if next_node.get_cycle_edge(sequence_index): # it's a cycle if the next node has an edge for this sequence
-                    cycle_edge = current_node.get_cycle_edge(sequence_index)
+                    cycle_edge = next_node.get_cycle_edge(sequence_index)
+                    if not cycle_edge:
+                        pass
                     cycle_edge.cycle += kmer[-1]
                     # keep current node the same
                 else: # create a cycle_edge

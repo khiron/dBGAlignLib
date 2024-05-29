@@ -20,25 +20,33 @@ class PartialOrderGraph:
     def transform_dbg_to_pog(self, node : DBGNode):
         sequence_set = {value[0] for value in self.sequence_names.values()}
         self.root = POG_Node.from_dbg_node(node, sequence_set, read_full_kmer=True)
-    
-    def expected_work(self, alignment_type: AlignmentMethod):
+
+        # add a synthetic end node with no fragment to all final nodes
+        end_node = POG_Node("", sequence_set)
+        for sequence in sequence_set:
+            node = self.root
+            last_node = node
+            while node:
+                last_node = node
+                node = node.get_next(sequence)
+            end_node.add_node(last_node)
+
+    def work(self, alignment_type: AlignmentMethod):
         """Returns the order complexity of aligninging the sequences."""
         if alignment_type == AlignmentMethod.EXACT:
             product = 1
-            for _, (_, length) in self.sequence_names.items():
+            for length in [length for _, length in self.sequence_names.values()]:
                 product *= length
             return product
         elif alignment_type == AlignmentMethod.PROGRESSIVE:
             # Extract sequence lengths and sort them
             sequence_lengths = sorted(length for _, (_, length) in self.sequence_names.items())
-            # Sum the product of each pair of consecutive lengths
-            return sum(sequence_lengths[i] * sequence_lengths[i+1] for i in range(len(sequence_lengths) - 1))
-        elif alignment_type == AlignmentMethod.DBG_LENGTH:
+            # Sum the product of each length with the next one
+            return sum(sequence_lengths[i] * sequence_lengths[i+1] for i in range(len(sequence_lengths) - 1))        
+        elif alignment_type == AlignmentMethod.DEBRUIJNGRAPH:
             return sum(1 for _ in self.root)
-        elif alignment_type == AlignmentMethod.DBG_LENGTH_NUMBER:
+        elif alignment_type == AlignmentMethod.BRAIDEDDEBRUIJGRAPH:
             return sum(1 for _ in self.root)
-        elif alignment_type in (AlignmentMethod.DBG_LENGTH, AlignmentMethod.DBG_LENGTH_NUMBER):
-            raise ValueError("Graph must be transformed to DirectedAcyclicGraph before calculating expected_work")
         else:
             raise ValueError("Unsupported alignment type")
 

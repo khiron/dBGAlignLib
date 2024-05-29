@@ -66,8 +66,8 @@ def test_dbg_to_cost_alignment():
         })
 
     dag = PartialOrderGraph(graph)    
-    assert dag.expected_work(AlignmentMethod.PROGRESSIVE) == 9 * 12 + 12 * 13 
-    assert dag.expected_work(AlignmentMethod.DBG_LENGTH_NUMBER) == 2 * 3 + 7 * 3 
+    assert dag.work(AlignmentMethod.PROGRESSIVE) == 9 * 12 + 12 * 13 
+    assert dag.work(AlignmentMethod.BRAIDEDDEBRUIJGRAPH) == 2 * 3 + 7 * 3 
 
 
 

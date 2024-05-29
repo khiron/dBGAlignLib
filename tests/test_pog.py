@@ -67,18 +67,22 @@ def test_pog_cycle(output_dir: Path):
     assert pog["seq2"] == "ACAGTACTGGCAT"
     assert pog["seq3"] == "ACAGCGCGCAT"
 
+    bubbles = pog.bubbles()
+    assert len(bubbles) == 1
+
+
 
 def test_construct_pog():
     pog = PartialOrderGraph()
-    pog.sequence_names = {'Sequence 1':(0,10),'Sequence 2':(1,10)}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
-    end = POG_Node("GCAT", {0,1}) 
-    pog.root = POG_Node("AGT", {0, 1}) + [POG_Node("GCG", {0})+end, POG_Node("GTG",{1})+end]
+    pog.sequence_names = {'Sequence 1':(1,10),'Sequence 2':(2,10)}  # dict keyed on sequence names, returns tuple containing index and lengths of the sequence
+    end = POG_Node("GCAT", {1,2}) 
+    pog.root = POG_Node("AGT", {1, 2}) + [POG_Node("GCG", {1})+end, POG_Node("GTG",{2})+end]
     assert pog.root.fragment == "AGT"
     assert len(pog) == 2
-    assert pog[0] == "AGTGCGGCAT"
-    assert pog[1] == "AGTGTGGCAT"
-    assert pog.expected_work(AlignmentMethod.EXACT) == 100
-    assert pog.expected_work(AlignmentMethod.PROGRESSIVE) == 100
+    assert pog[1] == "AGTGCGGCAT"
+    assert pog[2] == "AGTGTGGCAT"
+    assert pog.work(AlignmentMethod.EXACT) == 100
+    assert pog.work(AlignmentMethod.PROGRESSIVE) == 100
     # assert dag.expected_work(AlignmentMethod.DBG_LENGTH) == 9
     # assert dag.expected_work(AlignmentMethod.DBG_LENGTH_NUMBER) == 9
     bubbles = pog.bubbles()
@@ -86,6 +90,6 @@ def test_construct_pog():
     assert bubbles[0].start.fragment == "AGT"
     assert bubbles[0].end.fragment == "GCAT"
     assert bubbles[0].depth == 0
-    assert bubbles[0].start.sequence_set == {0,1}
-    assert bubbles[0].end.sequence_set == {0,1}
+    assert bubbles[0].start.sequence_set == {1,2}
+    assert bubbles[0].end.sequence_set == {1,2}
     assert len(bubbles[0].inner_bubbles) == 1

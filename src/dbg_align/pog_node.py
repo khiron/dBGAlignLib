@@ -8,6 +8,12 @@ class POG_Node:
         self.sequence_set = sequence_set
         self.next = []
 
+    def add_node(self, node: 'POG_Node'):
+        self.next.append(node)
+
+    def add_nodes(self, nodes: List['POG_Node']):
+        self.next.extend(nodes)
+
     def __add__(self, to_node: Union['POG_Node', List['POG_Node']]):
         # can't use @singledispatch with forward referenced types
         if isinstance(to_node, POG_Node):
@@ -30,11 +36,11 @@ class POG_Node:
                 for edge in dbg_node.edges:
                     if edge.target_node == unique_edge:
                         sequences.add(edge.sequence) 
-                instance += cls.from_dbg_node(unique_edge, sequences, True)
+                instance.add_node(cls.from_dbg_node(unique_edge, sequences, True))  
 
             for target, sequences in dbg_node.get_braids().items():
                 child = cls.from_dbg_node(target, sequences, True)
-                instance += child
+                instance.add_node(child)
         else:
             node = dbg_node
             kmer = node.kmer if read_full_kmer else node.kmer[-1]
@@ -50,7 +56,7 @@ class POG_Node:
             
             for target, sequences in node.get_braids().items():
                 child = cls.from_dbg_node(target, sequences, False)
-                instance += child
+                instance.add_node(child)
         return instance
 
     def __getitem__(self, index: int):
@@ -80,6 +86,12 @@ class POG_Node:
     def __repr__(self):
         return f"{self.sequence_set}:{self.fragment}:{len(self.next)}"
 
+    def is_root_node(self)->bool:
+        return self.fragment == None
+    
+    def is_end_node(self)->bool:
+        return len(self.next) == 0
+
     def bubbles(self, depth : int = 0)->List['DAG_Bubble']:
         from .pog_bubble import POG_Bubble
         # if there are no edges then there are no bubbles
@@ -100,10 +112,14 @@ class POG_Node:
                 # follow the first edge until you get to a node with the same sequence_set
                 end_candidate = start.next[0]
                 first_child = end_candidate
-                while not start.sequence_set.issubset(end_candidate.sequence_set): # if the sequence set starting a bubble is in a future node then that future node is the end of the bubble 
-                    if not end_candidate.edges:
+
+                # if the sequence set starting a bubble is in a future node then that future node is the end of the bubble 
+                while not start.sequence_set.issubset(end_candidate.sequence_set):
+                    if end_candidate.is_end_node():
+                        break
+                    if not end_candidate.next:
                         raise ValueError("Bubble never closes")
-                    end_candidate = end_candidate.edges[0]
+                    end_candidate = end_candidate.next[0]
                 inner_bubbles = first_child.bubbles(depth + 1)
                 return [POG_Bubble(start, end_candidate, inner_bubbles, depth)]
         
